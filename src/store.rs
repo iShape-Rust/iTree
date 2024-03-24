@@ -1,4 +1,4 @@
-use crate::node::{Color, EMPTY_INDEX, Node};
+use crate::node::{Color, EMPTY_REF, Node};
 
 pub struct Store<T> {
     pub(super) buffer: Vec<Node<T>>,
@@ -22,9 +22,9 @@ impl<T: Clone> Store<T> {
         let l = length as u32;
         for i in 0..l {
             let node = Node {
-                parent: EMPTY_INDEX,
-                left: EMPTY_INDEX,
-                right: EMPTY_INDEX,
+                parent: EMPTY_REF,
+                left: EMPTY_REF,
+                right: EMPTY_REF,
                 color: Color::Red,
                 value: self.empty.clone(),
             };

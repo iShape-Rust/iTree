@@ -1,4 +1,4 @@
-pub (crate) const EMPTY_INDEX: u32 = u32::MAX;
+pub const EMPTY_REF: u32 = u32::MAX;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum Color {

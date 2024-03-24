@@ -1,8 +1,7 @@
-use i_float::bit_pack::BitPackVec;
 use i_float::point::Point;
 use i_float::triangle::Triangle;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Segment {
     pub(crate) a: Point,
     pub(crate) b: Point,
@@ -25,28 +24,13 @@ impl Segment {
         Triangle::is_clockwise_point(self.a, p.clone(), self.b)
     }
 
-    pub(crate) fn is_above(&self, p: &Point) -> bool {
-        assert!(self.a.x <= p.x && p.x <= self.b.x);
-        Triangle::is_clockwise_point(self.a, self.b, p.clone())
-    }
-
     pub(crate) fn is_under_segment(&self, other: &Segment) -> bool {
         if self.a == other.a {
-            Triangle.isClockwisePoints(self.a, other.b, self.b)
+            Triangle::is_clockwise_point(self.a, other.b, self.b)
         } else if self.a.x < other.a.x {
-            Triangle.isClockwisePoints(self.a, other.a, self.b)
+            Triangle::is_clockwise_point(self.a, other.a, self.b)
         } else {
-            Triangle.isClockwisePoints(other.a, other.b, self.a)
-        }
-    }
-
-    pub(crate) fn is_less(&self, other: Segment) -> bool {
-        let a0 = self.a.bit_pack();
-        let a1 = other.a.bit_pack();
-        if a0 != a1 {
-            a0 < a1
-        } else {
-            self.b.bit_pack() < other.b.bit_pack()
+            Triangle::is_clockwise_point(other.a, other.b, self.a)
         }
     }
 }
@@ -59,7 +43,11 @@ pub(crate) struct IdSegment {
 
 impl PartialOrd for IdSegment {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.segment.is_under_segment(&other.segment).then(std::cmp::Ordering::Less).unwrap_or(std::cmp::Ordering::Greater))
+        if self.segment.is_under_segment(&other.segment) {
+            Some(std::cmp::Ordering::Less)
+        } else {
+            Some(std::cmp::Ordering::Greater)
+        }
     }
 }
 

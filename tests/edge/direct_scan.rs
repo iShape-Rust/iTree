@@ -1,25 +1,25 @@
 use i_float::point::Point;
 use crate::edge::segment::IdSegment;
 
-struct DirectScan {
+pub(super) struct DirectScan {
     buffer: Vec<IdSegment>,
 }
 
 impl DirectScan {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         DirectScan { buffer: Vec::new() }
     }
 
-    fn insert(&mut self, item: IdSegment) {
+    pub(super) fn insert(&mut self, item: IdSegment) {
         self.buffer.push(item);
     }
 
-    fn find_under(&mut self, p: Point, stop: i32) -> Option<IdSegment> {
+    pub(super) fn find_under(&mut self, p: &Point, stop: i32) -> Option<IdSegment> {
         let mut i = 0;
         let mut result: Option<IdSegment> = None;
         while i < self.buffer.len() {
             if self.buffer[i].segment.b.x <= stop {
-                self.buffer.swapRemove(i)
+                self.buffer.smart_remove(i)
             } else {
                 let segment = &self.buffer[i].segment;
                 if segment.is_under(&p) {
@@ -37,5 +37,19 @@ impl DirectScan {
         }
 
         result
+    }
+}
+
+trait SmartRemove {
+    fn smart_remove(&mut self, index: usize);
+}
+
+impl<T> SmartRemove for Vec<T> {
+    fn smart_remove(&mut self, index: usize) {
+        if self.len() >= index {
+            self.swap_remove(index);
+        } else {
+            _ = self.pop()
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::node::{Color, EMPTY_INDEX, Node};
+use crate::node::{Color, EMPTY_REF, Node};
 use crate::store::Store;
 
 pub struct Tree<T> {
@@ -13,17 +13,17 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let nil_index = store.get_free_index();
         Self {
             store,
-            root: EMPTY_INDEX,
+            root: EMPTY_REF,
             nil_index,
         }
     }
 
     pub fn clear_all(&mut self) {
-        if self.root == EMPTY_INDEX {
+        if self.root == EMPTY_REF {
             return;
         }
         self.store.put_back(self.root);
-        self.root = EMPTY_INDEX;
+        self.root = EMPTY_REF;
 
         let mut n = 1;
         while n > 0 {
@@ -34,11 +34,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
                 let node = self.node(index);
                 let left = node.left;
                 let right = node.right;
-                if left != EMPTY_INDEX {
+                if left != EMPTY_REF {
                     self.store.put_back(left);
                     n += 1;
                 }
-                if right != EMPTY_INDEX {
+                if right != EMPTY_REF {
                     self.store.put_back(right);
                     n += 1;
                 }
@@ -46,17 +46,17 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    fn is_black(&self, index: u32) -> bool {
-        index == EMPTY_INDEX || index != EMPTY_INDEX && self.node(index).color == Color::Black
+    pub fn is_black(&self, index: u32) -> bool {
+        index == EMPTY_REF || index != EMPTY_REF && self.node(index).color == Color::Black
     }
 
-    fn node(&self, index: u32) -> &Node<T> {
+    pub fn node(&self, index: u32) -> &Node<T> {
         unsafe {
             self.store.buffer.get_unchecked(index as usize)
         }
     }
 
-    fn mut_node(&mut self, index: u32) -> &mut Node<T> {
+    pub fn mut_node(&mut self, index: u32) -> &mut Node<T> {
         unsafe {
             self.store.buffer.get_unchecked_mut(index as usize)
         }
@@ -65,8 +65,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
     fn create_nil_node(&mut self, parent: u32) {
         let node = self.mut_node(self.nil_index);
         node.parent = parent;
-        node.left = EMPTY_INDEX;
-        node.right = EMPTY_INDEX;
+        node.left = EMPTY_REF;
+        node.right = EMPTY_REF;
         node.color = Color::Red;
     }
 
@@ -77,11 +77,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let lt_index = n.left;
         let lt_right = self.node(lt_index).right;
 
-        if lt_right != EMPTY_INDEX {
+        if lt_right != EMPTY_REF {
             self.mut_node(lt_right).parent = index;
             self.mut_node(index).left = lt_right;
         } else {
-            self.mut_node(index).left = EMPTY_INDEX;
+            self.mut_node(index).left = EMPTY_REF;
         }
 
         self.mut_node(index).parent = lt_index;
@@ -97,11 +97,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let rt_index = n.right;
         let rt_left = self.node(rt_index).left;
 
-        if rt_left != EMPTY_INDEX {
+        if rt_left != EMPTY_REF {
             self.mut_node(rt_left).parent = index;
             self.mut_node(index).right = rt_left;
         } else {
-            self.mut_node(index).right = EMPTY_INDEX;
+            self.mut_node(index).right = EMPTY_REF;
         }
 
         self.mut_node(index).parent = rt_index;
@@ -112,7 +112,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     fn replace_parents_child(&mut self, parent: u32, old_child: u32, new_child: u32) {
         self.mut_node(new_child).parent = parent;
-        if parent == EMPTY_INDEX {
+        if parent == EMPTY_REF {
             self.root = new_child;
             return;
         }
@@ -132,19 +132,19 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
 
         if p.left == old_child {
-            p.left = EMPTY_INDEX;
+            p.left = EMPTY_REF;
         } else {
-            p.right = EMPTY_INDEX;
+            p.right = EMPTY_REF;
         }
     }
 
     pub fn insert(&mut self, value: T) {
-        if self.root == EMPTY_INDEX {
+        if self.root == EMPTY_REF {
             let new_index = self.store.get_free_index();
             let new_node = self.mut_node(new_index);
-            new_node.parent = EMPTY_INDEX;
-            new_node.left = EMPTY_INDEX;
-            new_node.right = EMPTY_INDEX;
+            new_node.parent = EMPTY_REF;
+            new_node.left = EMPTY_REF;
+            new_node.right = EMPTY_REF;
             new_node.color = Color::Black;
             new_node.value = value;
             self.root = new_index;
@@ -155,7 +155,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let mut p_index = self.root;
         let mut is_left = false;
 
-        while index != EMPTY_INDEX {
+        while index != EMPTY_REF {
             let node = self.node(index);
             p_index = index;
             assert!(node.value != value);
@@ -172,8 +172,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let new_index = self.store.get_free_index();
         let new_node = self.mut_node(new_index);
         new_node.parent = p_index;
-        new_node.left = EMPTY_INDEX;
-        new_node.right = EMPTY_INDEX;
+        new_node.left = EMPTY_REF;
+        new_node.right = EMPTY_REF;
         new_node.color = Color::Red;
         new_node.value = value;
 
@@ -190,7 +190,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
+    pub fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
         // parent is red!
         let mut p_index = p_origin;
         // Case 2:
@@ -198,7 +198,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         // (rule 2), grandparent will never be null, and the following if-then block can be
         // removed.
         let g_index = self.node(p_index).parent;
-        if g_index == EMPTY_INDEX {
+        if g_index == EMPTY_REF {
             // As this method is only called on red nodes (either on newly inserted ones - or -
             // recursively on red grandparents), all we have to do is to recolor the root black.
             self.mut_node(p_index).color = Color::Black;
@@ -208,7 +208,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         // Case 3: Uncle is red -> recolor parent, grandparent and uncle
         let u_index = self.get_uncle(p_index);
 
-        if u_index != EMPTY_INDEX && self.node(u_index).color == Color::Red {
+        if u_index != EMPTY_REF && self.node(u_index).color == Color::Red {
             self.mut_node(p_index).color = Color::Black;
             self.mut_node(g_index).color = Color::Red;
             self.mut_node(u_index).color = Color::Black;
@@ -216,7 +216,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             // Call recursively for grandparent, which is now red.
             // It might be root or have a red parent, in which case we need to fix more...
             let gg_index = self.node(g_index).parent;
-            if gg_index != EMPTY_INDEX && self.node(gg_index).color == Color::Red {
+            if gg_index != EMPTY_REF && self.node(gg_index).color == Color::Red {
                 self.fix_red_black_properties_after_insert(g_index, gg_index);
             }
         } else if p_index == self.node(g_index).left {
@@ -258,8 +258,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     fn get_uncle(&self, p_index: u32) -> u32 {
         let parent = self.node(p_index);
-        if parent.parent == EMPTY_INDEX {
-            return EMPTY_INDEX;
+        if parent.parent == EMPTY_REF {
+            return EMPTY_REF;
         }
 
         let grandparent = self.node(parent.parent);
@@ -276,7 +276,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
     pub fn delete(&mut self, value: T) {
         let mut index = self.root;
         // Find the node to be deleted
-        while index != EMPTY_INDEX {
+        while index != EMPTY_REF {
             let node = self.node(index);
             if value == node.value {
                 break;
@@ -287,8 +287,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             }
         }
 
-        if index == EMPTY_INDEX {
-            assert_ne!(index, EMPTY_INDEX, "value is not found");
+        if index == EMPTY_REF {
+            debug_assert!(false, "value is not found");
             return;
         }
 
@@ -302,7 +302,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let node = self.node(index);
 
         let is_root = index == self.root;
-        let is_single = node.left == EMPTY_INDEX || node.right == EMPTY_INDEX;
+        let is_single = node.left == EMPTY_REF || node.right == EMPTY_REF;
 
         // Node has zero or one child
         if is_single {
@@ -318,7 +318,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             moved_up_node = self.delete_node_with_zero_or_one_child(successor_index);
         }
 
-        if moved_up_node == EMPTY_INDEX || deleted_node_color == Color::Black {
+        if moved_up_node == EMPTY_REF || deleted_node_color != Color::Black {
             return if is_single {
                 self.parent(index)
             } else if is_root {
@@ -333,7 +333,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         if moved_up_node == self.nil_index {
             let p_index = self.node(moved_up_node).parent;
 
-            if p_index != EMPTY_INDEX {
+            if p_index != EMPTY_REF {
                 self.remove_parents_child(p_index, moved_up_node);
             }
         }
@@ -349,7 +349,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     fn parent(&self, index: u32) -> u32 {
         let parent = self.node(index).parent;
-        if parent == EMPTY_INDEX {
+        if parent == EMPTY_REF {
             self.root
         } else {
             parent
@@ -364,11 +364,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let nd_parent = node.parent;
         let nd_color = node.color;
 
-        if nd_left != EMPTY_INDEX {
+        if nd_left != EMPTY_REF {
             // Node has ONLY a left child --> replace by its left child
             self.replace_parents_child(nd_parent, n_index, nd_left);
             nd_left // moved-up node
-        } else if nd_right != EMPTY_INDEX {
+        } else if nd_right != EMPTY_REF {
             // Node has ONLY a right child --> replace by its right child
             self.replace_parents_child(nd_parent, n_index, nd_right);
             nd_right // moved-up node
@@ -376,18 +376,18 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             // Node has no children -->
             // * node is red --> just remove it
             // * node is black --> replace it by a temporary NIL node (needed to fix the R-B rules)
-            if nd_parent != EMPTY_INDEX {
+            if nd_parent != EMPTY_REF {
                 if nd_color == Color::Black {
                     self.create_nil_node(nd_parent);
                     self.replace_parents_child(nd_parent, n_index, self.nil_index);
                     self.nil_index
                 } else {
                     self.remove_parents_child(nd_parent, n_index);
-                    EMPTY_INDEX
+                    EMPTY_REF
                 }
             } else {
-                self.root = EMPTY_INDEX;
-                EMPTY_INDEX
+                self.root = EMPTY_REF;
+                EMPTY_REF
             }
         }
     }
@@ -430,10 +430,6 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     fn handle_black_sibling_with_at_least_one_red_child(&mut self, n_index: u32, s_origin: u32) {
         let p_index = self.node(n_index).parent;
-        let (parent_color, parent_left, parent_right) = {
-            let parent = self.node(p_index);
-            (parent.color, parent.left, parent.right)
-        };
 
         let mut s_index = s_origin;
         let (mut sibling_left, mut sibling_right) = {
@@ -441,28 +437,28 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             (sibling.left, sibling.right)
         };
 
-        let node_is_left_child = n_index == parent_left;
+        let node_is_left_child = n_index == self.node(p_index).left;
 
         // Case 5: Black sibling with at least one red child + "outer nephew" is black
         // --> Recolor sibling and its child, and rotate around sibling
         if node_is_left_child && self.is_black(sibling_right) {
-            if sibling_left != EMPTY_INDEX {
+            if sibling_left != EMPTY_REF {
                 self.mut_node(sibling_left).color = Color::Black;
             }
             self.mut_node(s_index).color = Color::Red;
             self.rotate_right(s_index);
-            s_index = parent_right;
+            s_index = self.node(p_index).right;
 
             let sibling = self.node(s_index);
             sibling_left = sibling.left;
             sibling_right = sibling.right;
         } else if !node_is_left_child && self.is_black(sibling_left) {
-            if sibling_right != EMPTY_INDEX {
+            if sibling_right != EMPTY_REF {
                 self.mut_node(sibling_right).color = Color::Black;
             }
             self.mut_node(s_index).color = Color::Red;
             self.rotate_left(s_index);
-            s_index = parent_left;
+            s_index = self.node(p_index).left;
 
             let sibling = self.node(s_index);
             sibling_left = sibling.left;
@@ -473,15 +469,15 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         // Case 6: Black sibling with at least one red child + "outer nephew" is red
         // --> Recolor sibling + parent + sibling's child, and rotate around parent
-        self.mut_node(s_index).color = parent_color;
+        self.mut_node(s_index).color = self.node(p_index).color;
         self.mut_node(p_index).color = Color::Black;
         if node_is_left_child {
-            if sibling_right != EMPTY_INDEX {
+            if sibling_right != EMPTY_REF {
                 self.mut_node(sibling_right).color = Color::Black;
             }
             self.rotate_left(p_index)
         } else {
-            if sibling_left != EMPTY_INDEX {
+            if sibling_left != EMPTY_REF {
                 self.mut_node(sibling_left).color = Color::Black;
             }
             self.rotate_right(p_index)
@@ -518,7 +514,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     fn find_minimum(&self, n_index: u32) -> u32 {
         let mut i = n_index;
-        while self.node(i).left != EMPTY_INDEX {
+        while self.node(i).left != EMPTY_REF {
             i = self.node(i).left
         }
         i
@@ -527,7 +523,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
     pub fn find(&self, value: T) -> Option<T> {
         let mut index = self.root;
 
-        while index != EMPTY_INDEX {
+        while index != EMPTY_REF {
             let node = self.node(index);
             if node.value == value {
                 return Some(node.value.clone());
