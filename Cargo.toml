@@ -1,9 +1,11 @@
 [package]
 name = "i_tree"
 version = "0.1.0"
+authors = ["Nail Sharipov <nailxsharipov@gmail.com>"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Red-black tree implementation for rust"
+license = "MIT"
+repository = "https://github.com/iShape-Rust/iTree"
 
 [dev-dependencies]
 rand = "0.8.5"
