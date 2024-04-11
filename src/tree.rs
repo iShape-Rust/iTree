@@ -536,4 +536,18 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         None
     }
+
+    pub fn height(&self) -> usize {
+        if self.root == EMPTY_REF { return 0; }
+        let mut node = self.node(self.root);
+        let mut height = 1;
+        while node.left != EMPTY_REF {
+            node = self.node(node.left);
+            if node.color == Color::Black {
+                height += 1;
+            }
+        }
+
+        height << 1
+    }
 }
