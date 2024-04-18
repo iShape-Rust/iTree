@@ -1,7 +1,7 @@
 use crate::node::EMPTY_REF;
 use crate::tree::Tree;
 
-struct StackNode {
+pub struct StackNode {
     index: u32,
     left: u32,
     right: u32,
@@ -9,6 +9,8 @@ struct StackNode {
 
 pub trait Array<T> {
     fn ordered_list(&self) -> Vec<T>;
+    fn fill_ordered_list(&self, list: &mut Vec<T>);
+    fn fill_ordered_list_with_stack(&self, list: &mut Vec<T>, stack: &mut Vec<StackNode>);
 }
 
 impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
@@ -18,9 +20,24 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
         }
 
         let height = self.height();
-        let mut result = Vec::with_capacity(1 << height);
-
+        let mut list = Vec::with_capacity(1 << height);
         let mut stack = Vec::with_capacity(height);
+
+        self.fill_ordered_list_with_stack(&mut list, &mut stack);
+
+        list
+    }
+
+    fn fill_ordered_list(&self, list: &mut Vec<T>) {
+        let height = self.height();
+        let mut stack = Vec::with_capacity(height);
+        self.fill_ordered_list_with_stack(list, &mut stack);
+    }
+
+    fn fill_ordered_list_with_stack(&self, list: &mut Vec<T>, stack: &mut Vec<StackNode>) {
+        list.clear();
+        stack.clear();
+
         let root_node = self.node(self.root);
         stack.push(StackNode { index: self.root, left: root_node.left, right: root_node.right });
 
@@ -43,7 +60,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
                     s.index = EMPTY_REF; // to skip next time
 
                     // add value
-                    result.push(self.node(index).value.clone());
+                    list.push(self.node(index).value.clone());
                 }
 
                 if s.right != EMPTY_REF {
@@ -61,7 +78,5 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
                 }
             }
         }
-
-        result
     }
 }
