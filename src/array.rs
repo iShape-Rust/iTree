@@ -1,4 +1,4 @@
-use crate::node::EMPTY_REF;
+use crate::node::{Color, EMPTY_REF};
 use crate::tree::Tree;
 
 pub struct StackNode {
@@ -7,14 +7,72 @@ pub struct StackNode {
     right: u32,
 }
 
-pub trait Array<T> {
-    fn ordered_list(&self) -> Vec<T>;
-    fn fill_ordered_list(&self, list: &mut Vec<T>);
-    fn fill_ordered_list_with_stack(&self, list: &mut Vec<T>, stack: &mut Vec<StackNode>);
-}
+impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
+    pub fn with_sorted_array(empty: T, slice: &[T], extra_capacity: usize) -> Self {
+        let n = slice.len();
+        let mut tree = Tree::new(empty, n + extra_capacity);
 
-impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
-    fn ordered_list(&self) -> Vec<T> {
+        if n == 0 {
+            return tree;
+        }
+
+        let si = 0;
+        tree.insert_root(slice[si + (n >> 1)].clone());
+
+        let log = (n + 1).ilog2();
+        let s0 = n >> 1;
+
+        let mut j = 1;
+        for i in 1..log {
+            let color = if i & 1 == 0 { Color::Black } else { Color::Red };
+            let mut s = s0;
+
+            let ni = 1 << (i - 1);
+            for _ in 0..ni {
+                let p = ((j - 1) >> 1) + 1;
+
+                let parent = tree.mut_node(p);
+                parent.left = j + 1;
+                parent.right = j + 2;
+
+                let lt = s >> i;
+                let left = tree.store.get_free_index();
+                let left_node = tree.mut_node(left);
+                left_node.parent = p;
+                left_node.color = color;
+                left_node.value = slice[si + lt].clone();
+
+                s += n;
+
+                let rt = s >> i;
+                let right = tree.store.get_free_index();
+                let right_node = tree.mut_node(right);
+                right_node.parent = p;
+                right_node.color = color;
+                right_node.value = slice[si + rt].clone();
+
+                s += n;
+
+                j += 2
+            }
+        }
+
+        let mut s = s0;
+        let mut j = j as usize;
+        while j < n {
+            let index = s >> log;
+            let a = slice[si + index].clone();
+            s += n;
+
+            if tree.insert_if_not_exist(a) {
+                j += 1;
+            }
+        }
+
+        tree
+    }
+
+    pub fn ordered_list(&self) -> Vec<T> {
         if self.root == EMPTY_REF {
             return Vec::new();
         }
@@ -28,13 +86,13 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
         list
     }
 
-    fn fill_ordered_list(&self, list: &mut Vec<T>) {
+    pub fn fill_ordered_list(&self, list: &mut Vec<T>) {
         let height = self.height();
         let mut stack = Vec::with_capacity(height);
         self.fill_ordered_list_with_stack(list, &mut stack);
     }
 
-    fn fill_ordered_list_with_stack(&self, list: &mut Vec<T>, stack: &mut Vec<StackNode>) {
+    pub fn fill_ordered_list_with_stack(&self, list: &mut Vec<T>, stack: &mut Vec<StackNode>) {
         list.clear();
         stack.clear();
 
@@ -77,6 +135,30 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Array<T> for Tree<T> {
                     stack.pop();
                 }
             }
+        }
+    }
+
+    pub fn first_by_order(&self) -> u32 {
+        self.find_left_minimum(self.root)
+    }
+
+    pub fn next_by_order(&self, index: u32) -> u32 {
+        let this = self.node(index);
+        if this.right != EMPTY_REF {
+            return self.find_left_minimum(this.right);
+        } else {
+            // first parent bigger
+            let mut i = this.parent;
+            while i != EMPTY_REF {
+                if self.node(i).value > this.value {
+                    return i;
+                } else {
+                    i = self.node(i).parent;
+                }
+            }
+
+            // last element
+            EMPTY_REF
         }
     }
 }

@@ -3,7 +3,7 @@ mod edge;
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-    use i_float::point::Point;
+    use i_float::point::IntPoint;
 
     use rand::Rng;
     use crate::edge::cross_solver::CrossSolver;
@@ -14,12 +14,12 @@ mod tests {
     #[test]
     fn test_00() {
         let edges = vec![
-            IdSegment { index: 1, segment: Segment::new(Point { x: 3, y: 3 }, Point { x: 4, y: 2 }) },
-            IdSegment { index: 0, segment: Segment::new(Point { x: 4, y: 1 }, Point { x: 6, y: 7 }) },
-            IdSegment { index: 2, segment: Segment::new(Point { x: 5, y: 1 }, Point { x: 6, y: 0 }) },
+            IdSegment { index: 1, segment: Segment::new(IntPoint { x: 3, y: 3 }, IntPoint { x: 4, y: 2 }) },
+            IdSegment { index: 0, segment: Segment::new(IntPoint { x: 4, y: 1 }, IntPoint { x: 6, y: 7 }) },
+            IdSegment { index: 2, segment: Segment::new(IntPoint { x: 5, y: 1 }, IntPoint { x: 6, y: 0 }) },
         ];
 
-        let points = vec![Point { x: 3, y: 7 }, Point { x: 5, y: 7 }];
+        let points = vec![IntPoint { x: 3, y: 7 }, IntPoint { x: 5, y: 7 }];
         let result0 = DirectPointSolver::run(&edges, &points);
         let result1 = TreePointSolver::run(&edges, &points);
 
@@ -29,13 +29,13 @@ mod tests {
     #[test]
     fn test_01() {
         let edges = vec![
-            IdSegment { index: 0, segment: Segment::new(Point { x: 1, y: 5 }, Point { x: 1, y: 6 }) },
-            IdSegment { index: 1, segment: Segment::new(Point { x: 1, y: 5 }, Point { x: 6, y: 0 }) },
-            IdSegment { index: 2, segment: Segment::new(Point { x: 1, y: 3 }, Point { x: 2, y: 2 }) },
-            IdSegment { index: 3, segment: Segment::new(Point { x: 4, y: 4 }, Point { x: 5, y: 5 }) },
+            IdSegment { index: 0, segment: Segment::new(IntPoint { x: 1, y: 5 }, IntPoint { x: 1, y: 6 }) },
+            IdSegment { index: 1, segment: Segment::new(IntPoint { x: 1, y: 5 }, IntPoint { x: 6, y: 0 }) },
+            IdSegment { index: 2, segment: Segment::new(IntPoint { x: 1, y: 3 }, IntPoint { x: 2, y: 2 }) },
+            IdSegment { index: 3, segment: Segment::new(IntPoint { x: 4, y: 4 }, IntPoint { x: 5, y: 5 }) },
         ];
 
-        let points = vec![Point { x: 1, y: 7 }];
+        let points = vec![IntPoint { x: 1, y: 7 }];
         let result0 = DirectPointSolver::run(&edges, &points);
         let result1 = TreePointSolver::run(&edges, &points);
 
@@ -45,22 +45,22 @@ mod tests {
     #[test]
     fn test_02() {
         let edges = vec![
-            IdSegment { index: 3, segment: Segment::new(Point { x: 0, y: 3 }, Point { x: 7, y: 6 }) },
-            IdSegment { index: 5, segment: Segment::new(Point { x: 0, y: 5 }, Point { x: 0, y: 5 }) },
-            IdSegment { index: 2, segment: Segment::new(Point { x: 1, y: 0 }, Point { x: 7, y: 5 }) },
-            IdSegment { index: 4, segment: Segment::new(Point { x: 1, y: 4 }, Point { x: 2, y: 4 }) },
-            IdSegment { index: 7, segment: Segment::new(Point { x: 1, y: 4 }, Point { x: 2, y: 5 }) },
-            IdSegment { index: 6, segment: Segment::new(Point { x: 2, y: 2 }, Point { x: 2, y: 2 }) },
-            IdSegment { index: 0, segment: Segment::new(Point { x: 3, y: 3 }, Point { x: 4, y: 4 }) },
-            IdSegment { index: 1, segment: Segment::new(Point { x: 3, y: 3 }, Point { x: 4, y: 3 }) },
+            IdSegment { index: 3, segment: Segment::new(IntPoint { x: 0, y: 3 }, IntPoint { x: 7, y: 6 }) },
+            IdSegment { index: 5, segment: Segment::new(IntPoint { x: 0, y: 5 }, IntPoint { x: 0, y: 5 }) },
+            IdSegment { index: 2, segment: Segment::new(IntPoint { x: 1, y: 0 }, IntPoint { x: 7, y: 5 }) },
+            IdSegment { index: 4, segment: Segment::new(IntPoint { x: 1, y: 4 }, IntPoint { x: 2, y: 4 }) },
+            IdSegment { index: 7, segment: Segment::new(IntPoint { x: 1, y: 4 }, IntPoint { x: 2, y: 5 }) },
+            IdSegment { index: 6, segment: Segment::new(IntPoint { x: 2, y: 2 }, IntPoint { x: 2, y: 2 }) },
+            IdSegment { index: 0, segment: Segment::new(IntPoint { x: 3, y: 3 }, IntPoint { x: 4, y: 4 }) },
+            IdSegment { index: 1, segment: Segment::new(IntPoint { x: 3, y: 3 }, IntPoint { x: 4, y: 3 }) },
         ];
 
         let points = vec![
-            Point { x: 2, y: 1 },
-            Point { x: 3, y: 1 },
-            Point { x: 6, y: 5 },
-            Point { x: 6, y: 4 },
-            Point { x: 6, y: 0 },
+            IntPoint { x: 2, y: 1 },
+            IntPoint { x: 3, y: 1 },
+            IntPoint { x: 6, y: 5 },
+            IntPoint { x: 6, y: 4 },
+            IntPoint { x: 6, y: 0 },
         ];
         let result0 = DirectPointSolver::run(&edges, &points);
         let result1 = TreePointSolver::run(&edges, &points);
@@ -110,8 +110,8 @@ mod tests {
         result
     }
 
-    fn random_points(range: std::ops::Range<i32>, count: usize, exclude: &Vec<IdSegment>) -> Vec<Point> {
-        let mut p_set: HashSet<Point> = HashSet::with_capacity(2 * exclude.len());
+    fn random_points(range: std::ops::Range<i32>, count: usize, exclude: &Vec<IdSegment>) -> Vec<IntPoint> {
+        let mut p_set: HashSet<IntPoint> = HashSet::with_capacity(2 * exclude.len());
         for e in exclude.iter() {
             p_set.insert(e.segment.a.clone());
             p_set.insert(e.segment.b.clone());
@@ -121,7 +121,7 @@ mod tests {
         let mut result = Vec::with_capacity(count);
 
         while result.len() < count {
-            let p = Point {
+            let p = IntPoint {
                 x: rng.gen_range(range.clone()),
                 y: rng.gen_range(range.clone()),
             };

@@ -1,4 +1,4 @@
-use i_float::point::Point;
+use i_float::point::IntPoint;
 use i_tree::tree::Tree;
 use crate::edge::segment::{IdSegment, Segment};
 use crate::edge::tree_scan::TreeScan;
@@ -6,10 +6,10 @@ use crate::edge::tree_scan::TreeScan;
 pub(crate) struct TreePointSolver;
 
 impl TreePointSolver {
-    pub(crate) fn run(items: &Vec<IdSegment>, points: &Vec<Point>) -> Vec<usize> {
+    pub(crate) fn run(items: &Vec<IdSegment>, points: &Vec<IntPoint>) -> Vec<usize> {
         let mut scan_list = TreeScan {
             tree: Tree::new(
-                IdSegment { index: 0, segment: Segment::new(Point::new(0, 0), Point::new(0, 0)) },
+                IdSegment { index: 0, segment: Segment::new(IntPoint::new(0, 0), IntPoint::new(0, 0)) },
                 points.len(),
             )
         };

@@ -1,6 +1,6 @@
 use i_float::fix_float::FixMath;
 use i_float::fix_vec::FixVec;
-use i_float::point::Point;
+use i_float::point::IntPoint;
 use i_float::triangle::Triangle;
 use rand::Rng;
 
@@ -13,8 +13,8 @@ pub(crate) enum CrossType {
 }
 
 pub(crate) struct RandomEdge {
-    pub(crate) a: Point,
-    pub(crate) b: Point,
+    pub(crate) a: IntPoint,
+    pub(crate) b: IntPoint,
 }
 
 impl RandomEdge {
@@ -140,14 +140,14 @@ impl CrossSolver {
         let mut x1 = rng.gen_range(range.clone());
         let mut y1 = rng.gen_range(range.clone());
 
-        let mut edge = RandomEdge { a: Point::new(x0, y0), b: Point::new(x1, y1) };
+        let mut edge = RandomEdge { a: IntPoint::new(x0, y0), b: IntPoint::new(x1, y1) };
 
         let mut sqr_length = edge.sqr_length();
 
         while sqr_length_range.contains(&sqr_length) {
             x1 = rng.gen_range(range.clone());
             y1 = rng.gen_range(range.clone());
-            edge = RandomEdge { a: Point::new(x0, y0), b: Point::new(x1, y1) };
+            edge = RandomEdge { a: IntPoint::new(x0, y0), b: IntPoint::new(x1, y1) };
             sqr_length = edge.sqr_length()
         }
 

@@ -1,15 +1,15 @@
-use i_float::point::Point;
+use i_float::point::IntPoint;
 use i_float::triangle::Triangle;
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Segment {
-    pub(crate) a: Point,
-    pub(crate) b: Point,
+    pub(crate) a: IntPoint,
+    pub(crate) b: IntPoint,
     pub(crate) is_vertical: bool,
 }
 
 impl Segment {
-    pub(crate) fn new(a: Point, b: Point) -> Self {
+    pub(crate) fn new(a: IntPoint, b: IntPoint) -> Self {
         assert!(a.x <= b.x);
         Segment {
             a,
@@ -18,7 +18,7 @@ impl Segment {
         }
     }
 
-    pub(crate) fn is_under(&self, p: &Point) -> bool {
+    pub(crate) fn is_under(&self, p: &IntPoint) -> bool {
         assert!(self.a.x <= p.x && p.x <= self.b.x);
         assert!(p != &self.a && p != &self.b);
         Triangle::is_clockwise_point(self.a, p.clone(), self.b)

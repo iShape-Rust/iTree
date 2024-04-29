@@ -2,7 +2,6 @@
 mod tests {
     use rand::thread_rng;
     use rand::seq::SliceRandom;
-    use i_tree::array::Array;
     use i_tree::tree::Tree;
 
     #[test]
@@ -22,9 +21,12 @@ mod tests {
     #[test]
     fn test_01() {
         let n = 100;
+        let mut vec: Vec<i32> = (0..n as i32).collect();
+        let mut tree = Tree::new(0, n);
+        let mut rng = thread_rng();
         for _ in 0..10000 {
-            let mut vec = generate_and_shuffle_vector(n);
-            let mut tree = Tree::new(0, n);
+            tree.clear_all();
+            vec.shuffle(&mut rng);
             for a in vec.iter() {
                 tree.insert(a.clone());
             }
@@ -35,12 +37,4 @@ mod tests {
             assert_eq!(vec, ordered);
         }
     }
-
-    fn generate_and_shuffle_vector(n: usize) -> Vec<i32> {
-        let mut vec: Vec<i32> = (0..n as i32).collect();
-        let mut rng = thread_rng();
-        vec.shuffle(&mut rng);
-        vec
-    }
-
 }

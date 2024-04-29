@@ -1,11 +1,11 @@
-use i_float::point::Point;
+use i_float::point::IntPoint;
 use crate::edge::direct_scan::DirectScan;
 use crate::edge::segment::IdSegment;
 
 pub(crate) struct DirectPointSolver;
 
 impl DirectPointSolver {
-    pub(crate) fn run(items: &Vec<IdSegment>, points: &Vec<Point>) -> Vec<usize> {
+    pub(crate) fn run(items: &Vec<IdSegment>, points: &Vec<IntPoint>) -> Vec<usize> {
         let mut scan_list = DirectScan::new();
 
         let mut result = Vec::with_capacity(items.len());

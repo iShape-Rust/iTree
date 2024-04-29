@@ -8,7 +8,6 @@ pub struct Tree<T> {
 }
 
 impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
-
     pub fn is_empty(&self) -> bool {
         self.root == EMPTY_REF
     }
@@ -143,16 +142,40 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
+    pub fn insert_if_not_exist(&mut self, value: T) -> bool {
+        if self.root == EMPTY_REF {
+            self.insert_root(value);
+            return true;
+        }
+
+        let mut index = self.root;
+        let mut p_index = self.root;
+        let mut is_left = false;
+
+        while index != EMPTY_REF {
+            let node = self.node(index);
+            p_index = index;
+            if node.value == value {
+                return false;
+            }
+
+            is_left = value < node.value;
+            if is_left {
+                is_left = true;
+                index = node.left;
+            } else {
+                index = node.right;
+            }
+        }
+
+        _ = self.insert_with_parent(value, p_index, is_left);
+
+        true
+    }
+
     pub fn insert(&mut self, value: T) {
         if self.root == EMPTY_REF {
-            let new_index = self.store.get_free_index();
-            let new_node = self.mut_node(new_index);
-            new_node.parent = EMPTY_REF;
-            new_node.left = EMPTY_REF;
-            new_node.right = EMPTY_REF;
-            new_node.color = Color::Black;
-            new_node.value = value;
-            self.root = new_index;
+            self.insert_root(value);
             return;
         }
 
@@ -174,6 +197,21 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             }
         }
 
+        _ = self.insert_with_parent(value, p_index, is_left);
+    }
+
+    pub fn insert_root(&mut self, value: T) {
+        let new_index = self.store.get_free_index();
+        let new_node = self.mut_node(new_index);
+        new_node.parent = EMPTY_REF;
+        new_node.left = EMPTY_REF;
+        new_node.right = EMPTY_REF;
+        new_node.color = Color::Black;
+        new_node.value = value;
+        self.root = new_index;
+    }
+
+    pub fn insert_with_parent(&mut self, value: T, p_index: u32, is_left: bool) -> u32 {
         let new_index = self.store.get_free_index();
         let new_node = self.mut_node(new_index);
         new_node.parent = p_index;
@@ -193,6 +231,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         if parent.color == Color::Red {
             self.fix_red_black_properties_after_insert(new_index, p_index);
         }
+
+        new_index
     }
 
     pub fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
@@ -330,7 +370,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             deleted_node_color = node.color;
             moved_up_node = self.delete_node_with_zero_or_one_child(index);
         } else {
-            let successor_index = self.find_minimum(node.right);
+            let successor_index = self.find_left_minimum(node.right);
             let successor = self.node(successor_index);
             deleted_node_color = successor.color;
 
@@ -533,7 +573,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    fn find_minimum(&self, n_index: u32) -> u32 {
+    pub fn find_left_minimum(&self, n_index: u32) -> u32 {
         let mut i = n_index;
         while self.node(i).left != EMPTY_REF {
             i = self.node(i).left
@@ -556,6 +596,23 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
 
         None
+    }
+
+    pub fn find_index(&self, value: T) -> u32 {
+        let mut index = self.root;
+
+        while index != EMPTY_REF {
+            let node = self.node(index);
+            if node.value == value {
+                return index;
+            } else if value < node.value {
+                index = node.left;
+            } else {
+                index = node.right;
+            }
+        }
+
+        EMPTY_REF
     }
 
     pub fn height(&self) -> usize {

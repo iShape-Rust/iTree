@@ -1,4 +1,4 @@
-use i_float::point::Point;
+use i_float::point::IntPoint;
 use i_tree::node::{Color, EMPTY_REF};
 use i_tree::tree::Tree;
 use crate::edge::segment::IdSegment;
@@ -58,7 +58,7 @@ impl TreeScan {
         }
     }
 
-    pub(crate) fn find_under(&mut self, p: &Point, stop: i32) -> Option<IdSegment> {
+    pub(crate) fn find_under(&mut self, p: &IntPoint, stop: i32) -> Option<IdSegment> {
         let mut index = self.tree.root;
         let mut result: u32 = EMPTY_REF;
         while index != EMPTY_REF {

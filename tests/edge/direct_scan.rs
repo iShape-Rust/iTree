@@ -1,4 +1,4 @@
-use i_float::point::Point;
+use i_float::point::IntPoint;
 use crate::edge::segment::IdSegment;
 
 pub(super) struct DirectScan {
@@ -14,7 +14,7 @@ impl DirectScan {
         self.buffer.push(item);
     }
 
-    pub(super) fn find_under(&mut self, p: &Point, stop: i32) -> Option<IdSegment> {
+    pub(super) fn find_under(&mut self, p: &IntPoint, stop: i32) -> Option<IdSegment> {
         let mut i = 0;
         let mut result: Option<IdSegment> = None;
         while i < self.buffer.len() {
