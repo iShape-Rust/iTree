@@ -318,14 +318,14 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    pub fn delete(&mut self, value: T) {
+    pub fn delete(&mut self, value: &T) {
         let mut index = self.root;
         // Find the node to be deleted
         while index != EMPTY_REF {
             let node = self.node(index);
-            if value == node.value {
+            if *value == node.value {
                 break;
-            } else if value < node.value {
+            } else if *value < node.value {
                 index = node.left;
             } else {
                 index = node.right;
@@ -340,15 +340,15 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         _ = self.delete_index(index);
     }
 
-    pub fn delete_if_exist(&mut self, value: T) {
+    pub fn delete_if_exist(&mut self, value: &T) {
         let mut index = self.root;
         // Find the node to be deleted
         while index != EMPTY_REF {
             let node = self.node(index);
-            if value == node.value {
+            if *value == node.value {
                 _ = self.delete_index(index);
                 return;
-            } else if value < node.value {
+            } else if *value < node.value {
                 index = node.left;
             } else {
                 index = node.right;

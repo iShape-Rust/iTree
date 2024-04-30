@@ -90,7 +90,7 @@ mod tests {
         tree.insert(6);
         tree.insert(20);
 
-        tree.delete(15);
+        tree.delete(&15);
 
         assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
         assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
@@ -124,8 +124,8 @@ mod tests {
         tree.insert(3);
         tree.insert(5);
 
-        tree.delete(2);
-        tree.delete(1);
+        tree.delete(&2);
+        tree.delete(&1);
 
         assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
         assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
@@ -143,7 +143,7 @@ mod tests {
             }
 
             for i in 0..20 {
-                tree.delete(values[i])
+                tree.delete(&values[i])
             }
 
             assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
@@ -163,7 +163,7 @@ mod tests {
             }
 
             for i in 0..values.len() {
-                tree.delete(values[i])
+                tree.delete(&values[i])
             }
 
             assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
@@ -183,7 +183,7 @@ mod tests {
                 tree.insert(values[j]);
                 tree.insert(values[j + 1]);
                 tree.insert(values[j + 2]);
-                tree.delete(values[j]);
+                tree.delete(&values[j]);
                 tree.insert(values[j]);
                 j += 3
             }
@@ -237,7 +237,7 @@ mod tests {
             }
 
             for i in 0..3 {
-                tree.delete(values[i].clone());
+                tree.delete(&values[i]);
             }
 
             assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
@@ -257,7 +257,7 @@ mod tests {
             tree.insert(values[j]);
             tree.insert(values[j + 1]);
             tree.insert(values[j + 2]);
-            tree.delete(values[j]);
+            tree.delete(&values[j]);
             j += 3
         }
 
@@ -277,7 +277,7 @@ mod tests {
         }
 
         for i in 0..2 {
-            tree.delete(values[i].clone());
+            tree.delete(&values[i]);
             assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
             assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
         }
@@ -295,7 +295,7 @@ mod tests {
         }
 
         for i in 0..2 {
-            tree.delete(values[i].clone());
+            tree.delete(&values[i]);
             assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
             assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
         }
@@ -313,7 +313,7 @@ mod tests {
         }
 
         for i in 0..2 {
-            tree.delete(values[i].clone());
+            tree.delete(&values[i]);
             assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
             assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
         }
@@ -326,12 +326,12 @@ mod tests {
         tree.insert(6);
         tree.insert(7);
         tree.insert(2);
-        tree.delete(6);
+        tree.delete(&6);
 
         tree.insert(1);
         tree.insert(4);
         tree.insert(3);
-        tree.delete(1);
+        tree.delete(&1);
 
         tree.insert(5);
 
@@ -346,25 +346,25 @@ mod tests {
         tree.insert(10);
         tree.insert(20);
 
-        tree.delete(10);
+        tree.delete(&10);
         tree.insert(0);
         tree.insert(3);
         tree.insert(6);
 
-        tree.delete(3);
+        tree.delete(&3);
         tree.insert(2);
 
-        tree.delete(2);
+        tree.delete(&2);
         tree.insert(4);
 
-        tree.delete(6);
-        tree.delete(0);
-        tree.delete(4);
+        tree.delete(&6);
+        tree.delete(&0);
+        tree.delete(&4);
 
         tree.insert(8);
 
-        tree.delete(20);
-        tree.delete(8);
+        tree.delete(&20);
+        tree.delete(&8);
 
         assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
         assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
