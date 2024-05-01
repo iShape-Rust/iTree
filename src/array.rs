@@ -16,8 +16,12 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             return tree;
         }
 
+        let mut visited: Vec<bool> = vec![false; n];
+
         let si = 0;
-        tree.insert_root(slice[si + (n >> 1)].clone());
+        let mid = n >> 1;
+        visited[mid] = true;
+        tree.insert_root(slice[si + mid].clone());
 
         let log = (n + 1).ilog2();
         let s0 = n >> 1;
@@ -53,19 +57,15 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
                 s += n;
 
-                j += 2
+                j += 2;
+                visited[lt] = true;
+                visited[rt] = true;
             }
         }
 
-        let mut s = s0;
-        let mut j = j as usize;
-        while j < n {
-            let index = s >> log;
-            let a = slice[si + index].clone();
-            s += n;
-
-            if tree.insert_if_not_exist(a) {
-                j += 1;
+        for i in 0..n {
+            if !visited[i] {
+                tree.insert(slice[si + i].clone());
             }
         }
 
@@ -150,10 +150,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             // first parent bigger
             let mut i = this.parent;
             while i != EMPTY_REF {
-                if self.node(i).value > this.value {
+                let node = self.node(i);
+                if node.value > this.value {
                     return i;
                 } else {
-                    i = self.node(i).parent;
+                    i = node.parent;
                 }
             }
 

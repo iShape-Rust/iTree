@@ -8,6 +8,7 @@ pub struct Store<T> {
 
 impl<T: Clone> Store<T> {
     pub(super) fn new(empty: T, capacity: usize) -> Self {
+        let capacity = capacity.max(8);
         let mut store = Self {
             buffer: Vec::with_capacity(capacity),
             unused: Vec::with_capacity(capacity),
@@ -35,7 +36,8 @@ impl<T: Clone> Store<T> {
 
     pub fn get_free_index(&mut self) -> u32 {
         if self.unused.is_empty() {
-            self.reserve(16);
+            let extra_capacity = self.unused.capacity() >> 1;
+            self.reserve(extra_capacity);
         }
         self.unused.pop().unwrap()
     }

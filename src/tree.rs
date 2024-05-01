@@ -575,8 +575,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     pub fn find_left_minimum(&self, n_index: u32) -> u32 {
         let mut i = n_index;
-        while self.node(i).left != EMPTY_REF {
-            i = self.node(i).left
+        let mut left = self.node(i).left;
+        while left != EMPTY_REF {
+            let new_left = self.node(i).left;
+            i = left;
+            left = new_left;
         }
         i
     }
