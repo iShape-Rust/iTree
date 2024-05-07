@@ -86,6 +86,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         list
     }
 
+    #[inline]
     pub fn fill_ordered_list(&self, list: &mut Vec<T>) {
         let height = self.height();
         let mut stack = Vec::with_capacity(height);
@@ -138,6 +139,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
+    #[inline]
     pub fn first_by_order(&self) -> u32 {
         self.find_left_minimum(self.root)
     }

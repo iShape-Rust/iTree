@@ -7,6 +7,8 @@ pub struct Store<T> {
 }
 
 impl<T: Clone> Store<T> {
+
+    #[inline(always)]
     pub(super) fn new(empty: T, capacity: usize) -> Self {
         let capacity = capacity.max(8);
         let mut store = Self {
@@ -18,6 +20,7 @@ impl<T: Clone> Store<T> {
         store
     }
 
+    #[inline]
     fn reserve(&mut self, length: usize) {
         let n = self.buffer.len() as u32;
         let l = length as u32;
@@ -34,6 +37,7 @@ impl<T: Clone> Store<T> {
         }
     }
 
+    #[inline(always)]
     pub fn get_free_index(&mut self) -> u32 {
         if self.unused.is_empty() {
             let extra_capacity = self.unused.capacity() >> 1;
@@ -43,6 +47,7 @@ impl<T: Clone> Store<T> {
     }
 
 
+    #[inline(always)]
     pub fn put_back(&mut self, index: u32) {
         self.unused.push(index)
     }
