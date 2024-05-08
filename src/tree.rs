@@ -81,7 +81,6 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         node.color = Color::Red;
     }
 
-
     fn rotate_right(&mut self, index: u32) {
         let n = self.node(index);
         let p = n.parent;
@@ -122,7 +121,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         self.replace_parents_child(p, index, rt_index);
     }
 
-    #[inline]
+    #[inline(always)]
     fn replace_parents_child(&mut self, parent: u32, old_child: u32, new_child: u32) {
         self.mut_node(new_child).parent = parent;
         if parent == EMPTY_REF {
@@ -140,7 +139,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn remove_parents_child(&mut self, parent: u32, old_child: u32) {
         let p = self.mut_node(parent);
         assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
@@ -210,7 +209,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         _ = self.insert_with_parent(value, p_index, is_left);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn insert_root(&mut self, value: T) {
         let new_index = self.store.get_free_index();
         let new_node = self.mut_node(new_index);

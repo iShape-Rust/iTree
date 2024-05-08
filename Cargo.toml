@@ -1,6 +1,6 @@
 [package]
 name = "i_tree"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Nail Sharipov <nailxsharipov@gmail.com>"]
 edition = "2021"
 description = "Red-black tree implementation for rust. Only for uniq elements"
@@ -10,5 +10,5 @@ repository = "https://github.com/iShape-Rust/iTree"
 [dev-dependencies]
 rand = "0.8.5"
 
-i_float = { version = "1.0.1" }
+i_float = { version = "1.0.3" }
 #i_float = { path = "../iFloat" }

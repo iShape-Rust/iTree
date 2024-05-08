@@ -139,7 +139,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn first_by_order(&self) -> u32 {
         self.find_left_minimum(self.root)
     }
