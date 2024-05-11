@@ -130,7 +130,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
 
         let p = self.mut_node(parent);
-        assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
+        debug_assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
 
         if p.left == old_child {
             p.left = new_child;
@@ -142,7 +142,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
     #[inline(always)]
     fn remove_parents_child(&mut self, parent: u32, old_child: u32) {
         let p = self.mut_node(parent);
-        assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
+        debug_assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
 
         if p.left == old_child {
             p.left = EMPTY_REF;
@@ -195,7 +195,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         while index != EMPTY_REF {
             let node = self.node(index);
             p_index = index;
-            assert!(node.value != value);
+            debug_assert!(node.value != value);
 
             is_left = value < node.value;
             if is_left {
@@ -321,7 +321,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         let grandparent = self.node(parent.parent);
 
-        assert!(grandparent.left == p_index || grandparent.right == p_index, "Parent is not a child of its grandparent");
+        debug_assert!(grandparent.left == p_index || grandparent.right == p_index, "Parent is not a child of its grandparent");
 
         if grandparent.left == p_index {
             grandparent.right
@@ -579,7 +579,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
     fn get_sibling(&self, n_index: u32) -> u32 {
         let p_index = self.node(n_index).parent;
         let parent = self.node(p_index);
-        assert!(n_index == parent.left || n_index == parent.right);
+        debug_assert!(n_index == parent.left || n_index == parent.right);
         if n_index == parent.left {
             parent.right
         } else {

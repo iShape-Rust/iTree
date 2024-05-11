@@ -1,6 +1,6 @@
 [package]
 name = "i_tree"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Nail Sharipov <nailxsharipov@gmail.com>"]
 edition = "2021"
 description = "Red-black tree implementation for rust. Only for uniq elements"

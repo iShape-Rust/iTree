@@ -10,7 +10,7 @@ pub(crate) struct Segment {
 
 impl Segment {
     pub(crate) fn new(a: IntPoint, b: IntPoint) -> Self {
-        assert!(a.x <= b.x);
+        debug_assert!(a.x <= b.x);
         Segment {
             a,
             b,
@@ -19,8 +19,8 @@ impl Segment {
     }
 
     pub(crate) fn is_under(&self, p: &IntPoint) -> bool {
-        assert!(self.a.x <= p.x && p.x <= self.b.x);
-        assert!(p != &self.a && p != &self.b);
+        debug_assert!(self.a.x <= p.x && p.x <= self.b.x);
+        debug_assert!(p != &self.a && p != &self.b);
         Triangle::is_clockwise_point(self.a, p.clone(), self.b)
     }
 
