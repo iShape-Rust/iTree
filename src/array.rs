@@ -141,7 +141,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     #[inline(always)]
     pub fn first_by_order(&self) -> u32 {
-        self.find_left_minimum(self.root)
+        if self.root == EMPTY_REF {
+            EMPTY_REF
+        } else {
+            self.find_left_minimum(self.root)
+        }
     }
 
     pub fn next_by_order(&self, index: u32) -> u32 {
