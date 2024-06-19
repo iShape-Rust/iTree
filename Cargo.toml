@@ -10,5 +10,5 @@ repository = "https://github.com/iShape-Rust/iTree"
 [dev-dependencies]
 rand = "0.8.5"
 
-i_float = { version = "1.0.3" }
+i_float = { version = "1.2.0" }
 #i_float = { path = "../iFloat" }
