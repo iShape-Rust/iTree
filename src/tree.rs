@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use crate::node::{Color, EMPTY_REF, Node};
 use crate::store::Store;
 
@@ -55,7 +56,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     #[inline(always)]
     pub fn is_black(&self, index: u32) -> bool {
-        index == EMPTY_REF || index != EMPTY_REF && self.node(index).color == Color::Black
+        index == EMPTY_REF || self.node(index).color == Color::Black
     }
 
     #[inline(always)]
@@ -335,12 +336,16 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         // Find the node to be deleted
         while index != EMPTY_REF {
             let node = self.node(index);
-            if *value == node.value {
-                break;
-            } else if *value < node.value {
-                index = node.left;
-            } else {
-                index = node.right;
+            match node.value.cmp(value) {
+                Ordering::Equal => {
+                    break;
+                }
+                Ordering::Less => {
+                    index = node.right;
+                }
+                Ordering::Greater => {
+                    index = node.left;
+                }
             }
         }
 
@@ -357,13 +362,17 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         // Find the node to be deleted
         while index != EMPTY_REF {
             let node = self.node(index);
-            if *value == node.value {
-                _ = self.delete_index(index);
-                return;
-            } else if *value < node.value {
-                index = node.left;
-            } else {
-                index = node.right;
+            match node.value.cmp(value) {
+                Ordering::Equal => {
+                    _ = self.delete_index(index);
+                    return;
+                }
+                Ordering::Less => {
+                    index = node.right;
+                }
+                Ordering::Greater => {
+                    index = node.left;
+                }
             }
         }
     }
@@ -603,12 +612,16 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         while index != EMPTY_REF {
             let node = self.node(index);
-            if node.value == value {
-                return Some(node.value.clone());
-            } else if value < node.value {
-                index = node.left;
-            } else {
-                index = node.right;
+            match node.value.cmp(&value) {
+                Ordering::Equal => {
+                    return Some(node.value.clone());
+                }
+                Ordering::Less => {
+                    index = node.right;
+                }
+                Ordering::Greater => {
+                    index = node.left;
+                }
             }
         }
 
@@ -620,12 +633,16 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         while index != EMPTY_REF {
             let node = self.node(index);
-            if node.value == value {
-                return index;
-            } else if value < node.value {
-                index = node.left;
-            } else {
-                index = node.right;
+            match node.value.cmp(&value) {
+                Ordering::Equal => {
+                    return index;
+                }
+                Ordering::Less => {
+                    index = node.right;
+                }
+                Ordering::Greater => {
+                    index = node.left;
+                }
             }
         }
 

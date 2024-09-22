@@ -151,7 +151,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
     pub fn next_by_order(&self, index: u32) -> u32 {
         let this = self.node(index);
         if this.right != EMPTY_REF {
-            return self.find_left_minimum(this.right);
+            self.find_left_minimum(this.right)
         } else {
             // first parent bigger
             let mut i = this.parent;
