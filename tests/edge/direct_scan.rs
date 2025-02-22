@@ -1,4 +1,4 @@
-use i_float::point::IntPoint;
+use i_float::int::point::IntPoint;
 use crate::edge::segment::IdSegment;
 
 pub(super) struct DirectScan {

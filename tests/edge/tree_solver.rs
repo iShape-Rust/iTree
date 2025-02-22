@@ -1,4 +1,4 @@
-use i_float::point::IntPoint;
+use i_float::int::point::IntPoint;
 use i_tree::tree::Tree;
 use crate::edge::segment::{IdSegment, Segment};
 use crate::edge::tree_scan::TreeScan;

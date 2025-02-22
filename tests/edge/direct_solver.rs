@@ -1,4 +1,4 @@
-use i_float::point::IntPoint;
+use i_float::int::point::IntPoint;
 use crate::edge::direct_scan::DirectScan;
 use crate::edge::segment::IdSegment;
 

@@ -1,6 +1,6 @@
 use i_float::fix_float::FixMath;
 use i_float::fix_vec::FixVec;
-use i_float::point::IntPoint;
+use i_float::int::point::IntPoint;
 use i_float::triangle::Triangle;
 use rand::Rng;
 

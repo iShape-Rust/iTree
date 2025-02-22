@@ -3,8 +3,7 @@ mod edge;
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-    use i_float::point::IntPoint;
-
+    use i_float::int::point::IntPoint;
     use rand::Rng;
     use crate::edge::cross_solver::CrossSolver;
     use crate::edge::direct_solver::DirectPointSolver;
