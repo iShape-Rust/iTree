@@ -1,32 +1,63 @@
+use crate::key::exp::KeyExpCollection;
+use crate::key::node::{Color, EMPTY_REF, Node};
+use crate::key::pool::Pool;
+use crate::{Expiration, ExpiredKey};
 use std::cmp::Ordering;
-use crate::node::{Color, EMPTY_REF, Node};
-use crate::store::Store;
+use std::marker::PhantomData;
+use crate::key::entity::Entity;
 
-pub struct Tree<T> {
-    pub store: Store<T>,
-    pub root: u32,
+pub struct KeyExpTree<K, E, V> {
+    pub(super) store: Pool<K, E, V>,
+    pub(super) root: u32,
     nil_index: u32,
+    phantom_data: PhantomData<E>
 }
 
-impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
-
-    #[inline(always)]
-    pub fn is_empty(&self) -> bool {
-        self.root == EMPTY_REF
-    }
-
-    #[inline(always)]
-    pub fn new(empty: T, capacity: usize) -> Self {
-        let mut store = Store::new(empty, capacity);
+impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
+    #[inline]
+    pub fn new(capacity: usize) -> Self {
+        let mut store = Pool::new(capacity);
         let nil_index = store.get_free_index();
         Self {
             store,
             root: EMPTY_REF,
             nil_index,
+            phantom_data: Default::default(),
         }
     }
+}
 
-    pub fn clear_all(&mut self) {
+impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for KeyExpTree<K, E, V> {
+    #[inline(always)]
+    fn is_empty(&self) -> bool {
+        self.root == EMPTY_REF
+    }
+
+    #[inline(always)]
+    fn insert(&mut self, key: K, val: V, time: E) {
+        debug_assert!(key.expiration() >= time, "The value is already expired");
+        self.insert_entity(Entity::new(key, val), time);
+    }
+
+    #[inline(always)]
+    fn get_value(&mut self, time: E, key: K) -> Option<V> {
+        self.search_value(time, key)
+    }
+
+    #[inline]
+    fn first_less(&mut self, time: E, default: V, key: K) -> V {
+        self.search_first_less(time, default, key)
+    }
+
+    #[inline]
+    fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    where
+        F: Fn(K) -> Ordering
+    {
+        self.search_first_less_by(time, default, f)
+    }
+
+    fn clear(&mut self) {
         if self.root == EMPTY_REF {
             return;
         }
@@ -53,186 +84,190 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             }
         }
     }
+}
 
+impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     #[inline(always)]
-    pub fn is_black(&self, index: u32) -> bool {
+    fn is_black(&self, index: u32) -> bool {
         index == EMPTY_REF || self.node(index).color == Color::Black
     }
 
     #[inline(always)]
-    pub fn node(&self, index: u32) -> &Node<T> {
-        unsafe {
-            self.store.buffer.get_unchecked(index as usize)
-        }
+    pub(super) fn node(&self, index: u32) -> &Node<K, E, V> {
+        unsafe { self.store.buffer.get_unchecked(index as usize) }
     }
 
     #[inline(always)]
-    pub fn mut_node(&mut self, index: u32) -> &mut Node<T> {
-        unsafe {
-            self.store.buffer.get_unchecked_mut(index as usize)
+    pub(super) fn node_mut(&mut self, index: u32) -> &mut Node<K, E, V> {
+        unsafe { self.store.buffer.get_unchecked_mut(index as usize) }
+    }
+
+    #[inline]
+    pub(super) fn expire_root(&mut self, time: E) -> u32 {
+        let mut index = self.root;
+
+        while index != EMPTY_REF {
+            let node = self.node(index);
+            if node.is_not_expired(time) {
+                return index;
+            }
+            self.delete_index(index);
+            index = self.root;
         }
+        index
+    }
+
+    #[inline]
+    pub(super) fn expire_left(&mut self, n_index: u32, time: E) -> u32 {
+        let mut index = self.node(n_index).left;
+
+        while index != EMPTY_REF {
+            let node = self.node(index);
+            if node.is_not_expired(time) {
+                return index;
+            }
+            self.delete_index(index);
+            index = self.node(n_index).left;
+        }
+        index
+    }
+
+    #[inline]
+    pub(super) fn expire_right(&mut self, n_index: u32, time: E) -> u32 {
+        let mut index = self.node(n_index).right;
+
+        while index != EMPTY_REF {
+            let node = self.node(index);
+            if node.is_not_expired(time) {
+                return index;
+            }
+            self.delete_index(index);
+            index = self.node(n_index).right;
+        }
+        index
     }
 
     #[inline(always)]
     fn create_nil_node(&mut self, parent: u32) {
-        let node = self.mut_node(self.nil_index);
+        let node = self.node_mut(self.nil_index);
         node.parent = parent;
         node.left = EMPTY_REF;
         node.right = EMPTY_REF;
         node.color = Color::Red;
     }
 
-    fn rotate_right(&mut self, index: u32) {
-        let n = self.node(index);
-        let p = n.parent;
-
-        let lt_index = n.left;
-        let lt_right = self.node(lt_index).right;
-
-        if lt_right != EMPTY_REF {
-            self.mut_node(lt_right).parent = index;
-            self.mut_node(index).left = lt_right;
-        } else {
-            self.mut_node(index).left = EMPTY_REF;
-        }
-
-        self.mut_node(index).parent = lt_index;
-        self.mut_node(lt_index).right = index;
-
-        self.replace_parents_child(p, index, lt_index);
-    }
-
-    fn rotate_left(&mut self, index: u32) {
-        let n = self.node(index);
-        let p = n.parent;
-
-        let rt_index = n.right;
-        let rt_left = self.node(rt_index).left;
-
-        if rt_left != EMPTY_REF {
-            self.mut_node(rt_left).parent = index;
-            self.mut_node(index).right = rt_left;
-        } else {
-            self.mut_node(index).right = EMPTY_REF;
-        }
-
-        self.mut_node(index).parent = rt_index;
-        self.mut_node(rt_index).left = index;
-
-        self.replace_parents_child(p, index, rt_index);
-    }
-
-    #[inline(always)]
-    fn replace_parents_child(&mut self, parent: u32, old_child: u32, new_child: u32) {
-        self.mut_node(new_child).parent = parent;
-        if parent == EMPTY_REF {
-            self.root = new_child;
-            return;
-        }
-
-        let p = self.mut_node(parent);
-        debug_assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
-
-        if p.left == old_child {
-            p.left = new_child;
-        } else {
-            p.right = new_child;
-        }
-    }
-
-    #[inline(always)]
-    fn remove_parents_child(&mut self, parent: u32, old_child: u32) {
-        let p = self.mut_node(parent);
-        debug_assert!(p.left == old_child || p.right == old_child, "Node is not a child of its parent");
-
-        if p.left == old_child {
-            p.left = EMPTY_REF;
-        } else {
-            p.right = EMPTY_REF;
-        }
-    }
-
-    pub fn insert_if_not_exist(&mut self, value: T) -> bool {
-        if self.root == EMPTY_REF {
-            self.insert_root(value);
-            return true;
-        }
-
-        let mut index = self.root;
-        let mut p_index = self.root;
-        let mut is_left = false;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            p_index = index;
-            if node.value == value {
-                return false;
-            }
-
-            is_left = value < node.value;
-            if is_left {
-                is_left = true;
-                index = node.left;
-            } else {
-                index = node.right;
-            }
-        }
-
-        _ = self.insert_with_parent(value, p_index, is_left);
-
-        true
-    }
-
-    pub fn insert(&mut self, value: T) {
-        if self.root == EMPTY_REF {
-            self.insert_root(value);
-            return;
-        }
-
-        let mut index = self.root;
-        let mut p_index = self.root;
-        let mut is_left = false;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            p_index = index;
-            debug_assert!(node.value != value);
-
-            is_left = value < node.value;
-            if is_left {
-                is_left = true;
-                index = node.left;
-            } else {
-                index = node.right;
-            }
-        }
-
-        _ = self.insert_with_parent(value, p_index, is_left);
-    }
-
-    #[inline(always)]
-    pub fn insert_root(&mut self, value: T) {
+    #[inline]
+    fn insert_root(&mut self, entity: Entity<K, E, V>) {
         let new_index = self.store.get_free_index();
-        let new_node = self.mut_node(new_index);
+        let new_node = self.node_mut(new_index);
         new_node.parent = EMPTY_REF;
         new_node.left = EMPTY_REF;
         new_node.right = EMPTY_REF;
         new_node.color = Color::Black;
-        new_node.value = value;
+        new_node.entity = entity;
         self.root = new_index;
     }
 
     #[inline]
-    pub fn insert_with_parent(&mut self, value: T, p_index: u32, is_left: bool) -> u32 {
+    fn search_value(&mut self, time: E, key: K) -> Option<V> {
+        let mut index = self.expire_root(time);
+
+        while index != EMPTY_REF {
+            let entity = self.node(index).entity;
+            match entity.key.cmp(&key) {
+                Ordering::Equal => return Some(entity.val),
+                Ordering::Less => index = self.expire_left(index, time),
+                Ordering::Greater => index = self.expire_right(index, time),
+            }
+        }
+
+        None
+    }
+
+    #[inline]
+    fn search_first_less(&mut self, time: E, default: V, key: K) -> V {
+        let mut index = self.expire_root(time);
+        let mut result = default;
+        while index != EMPTY_REF {
+            let entity = self.node(index).entity;
+            match entity.key.cmp(&key) {
+                Ordering::Equal => return entity.val,
+                Ordering::Less => {
+                    result = entity.val;
+                    index = self.expire_right(index, time);
+                },
+                Ordering::Greater => index = self.expire_left(index, time),
+            }
+        }
+
+        result
+    }
+
+    #[inline]
+    fn search_first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    where
+        F: Fn(K) -> Ordering,
+    {
+        let mut index = self.expire_root(time);
+        let mut result = default;
+        while index != EMPTY_REF {
+            let entity = self.node(index).entity;
+            match f(entity.key) {
+                Ordering::Equal => return entity.val,
+                Ordering::Less => {
+                    result = entity.val;
+                    index = self.expire_right(index, time);
+                },
+                Ordering::Greater => index = self.expire_left(index, time),
+            }
+        }
+
+        result
+    }
+
+    #[inline]
+    fn insert_entity(&mut self, entity: Entity<K, E, V>, time: E) {
+        let mut index = self.expire_root(time);
+        if index == EMPTY_REF {
+            self.insert_root(entity);
+            return;
+        }
+
+        let mut p_index = EMPTY_REF;
+        let mut is_left = false;
+        let key = entity.key;
+
+        while index != EMPTY_REF {
+            p_index = index;
+            let node = self.node(index);
+
+            is_left = key < node.entity.key;
+            if is_left {
+                is_left = true;
+                index = self.expire_left(index, time);
+            } else {
+                index = self.expire_right(index, time);
+            }
+        }
+
+        if p_index == EMPTY_REF {
+            self.insert_root(entity);
+        } else {
+            self.insert_with_parent(entity, p_index, is_left);
+        }
+    }
+
+    #[inline]
+    fn insert_with_parent(&mut self, entity: Entity<K, E, V>, p_index: u32, is_left: bool) {
         let new_index = self.store.get_free_index();
-        let new_node = self.mut_node(new_index);
+        let new_node = self.node_mut(new_index);
         new_node.parent = p_index;
         new_node.left = EMPTY_REF;
         new_node.right = EMPTY_REF;
         new_node.color = Color::Red;
-        new_node.value = value;
+        new_node.entity = entity;
 
-        let parent = self.mut_node(p_index);
+        let parent = self.node_mut(p_index);
 
         if is_left {
             parent.left = new_index;
@@ -243,11 +278,9 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         if parent.color == Color::Red {
             self.fix_red_black_properties_after_insert(new_index, p_index);
         }
-
-        new_index
     }
 
-    pub fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
+    fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
         // parent is red!
         let mut p_index = p_origin;
         // Case 2:
@@ -258,7 +291,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         if g_index == EMPTY_REF {
             // As this method is only called on red nodes (either on newly inserted ones - or -
             // recursively on red grandparents), all we have to do is to recolor the root black.
-            self.mut_node(p_index).color = Color::Black;
+            self.node_mut(p_index).color = Color::Black;
             return;
         }
 
@@ -266,9 +299,9 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         let u_index = self.get_uncle(p_index);
 
         if u_index != EMPTY_REF && self.node(u_index).color == Color::Red {
-            self.mut_node(p_index).color = Color::Black;
-            self.mut_node(g_index).color = Color::Red;
-            self.mut_node(u_index).color = Color::Black;
+            self.node_mut(p_index).color = Color::Black;
+            self.node_mut(g_index).color = Color::Red;
+            self.node_mut(u_index).color = Color::Black;
 
             // Call recursively for grandparent, which is now red.
             // It might be root or have a red parent, in which case we need to fix more...
@@ -291,8 +324,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             self.rotate_right(g_index);
 
             // Recolor original parent and grandparent
-            self.mut_node(p_index).color = Color::Black;
-            self.mut_node(g_index).color = Color::Red;
+            self.node_mut(p_index).color = Color::Black;
+            self.node_mut(g_index).color = Color::Red;
         } else {
             // Parent is right child of grandparent
             // Case 4b: Uncle is black and node is right->left "inner child" of its grandparent
@@ -308,8 +341,8 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             self.rotate_left(g_index);
 
             // Recolor original parent and grandparent
-            self.mut_node(p_index).color = Color::Black;
-            self.mut_node(g_index).color = Color::Red;
+            self.node_mut(p_index).color = Color::Black;
+            self.node_mut(g_index).color = Color::Red;
         }
     }
 
@@ -322,7 +355,10 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         let grandparent = self.node(parent.parent);
 
-        debug_assert!(grandparent.left == p_index || grandparent.right == p_index, "Parent is not a child of its grandparent");
+        debug_assert!(
+            grandparent.left == p_index || grandparent.right == p_index,
+            "Parent is not a child of its grandparent"
+        );
 
         if grandparent.left == p_index {
             grandparent.right
@@ -331,84 +367,92 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    pub fn delete(&mut self, value: &T) {
-        let mut index = self.root;
-        // Find the node to be deleted
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match node.value.cmp(value) {
-                Ordering::Equal => {
-                    break;
-                }
-                Ordering::Less => {
-                    index = node.right;
-                }
-                Ordering::Greater => {
-                    index = node.left;
-                }
-            }
+    fn rotate_right(&mut self, index: u32) {
+        let n = self.node(index);
+        let p = n.parent;
+
+        let lt_index = n.left;
+        let lt_right = self.node(lt_index).right;
+
+        if lt_right != EMPTY_REF {
+            self.node_mut(lt_right).parent = index;
+            self.node_mut(index).left = lt_right;
+        } else {
+            self.node_mut(index).left = EMPTY_REF;
         }
 
-        if index == EMPTY_REF {
-            debug_assert!(false, "value is not found");
+        self.node_mut(index).parent = lt_index;
+        self.node_mut(lt_index).right = index;
+
+        self.replace_parents_child(p, index, lt_index);
+    }
+
+    fn rotate_left(&mut self, index: u32) {
+        let n = self.node(index);
+        let p = n.parent;
+
+        let rt_index = n.right;
+        let rt_left = self.node(rt_index).left;
+
+        if rt_left != EMPTY_REF {
+            self.node_mut(rt_left).parent = index;
+            self.node_mut(index).right = rt_left;
+        } else {
+            self.node_mut(index).right = EMPTY_REF;
+        }
+
+        self.node_mut(index).parent = rt_index;
+        self.node_mut(rt_index).left = index;
+
+        self.replace_parents_child(p, index, rt_index);
+    }
+
+    #[inline]
+    fn replace_parents_child(&mut self, parent: u32, old_child: u32, new_child: u32) {
+        self.node_mut(new_child).parent = parent;
+        if parent == EMPTY_REF {
+            self.root = new_child;
             return;
         }
 
-        _ = self.delete_index(index);
-    }
+        let p = self.node_mut(parent);
+        debug_assert!(
+            p.left == old_child || p.right == old_child,
+            "Node is not a child of its parent"
+        );
 
-    pub fn delete_if_exist(&mut self, value: &T) {
-        let mut index = self.root;
-        // Find the node to be deleted
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match node.value.cmp(value) {
-                Ordering::Equal => {
-                    _ = self.delete_index(index);
-                    return;
-                }
-                Ordering::Less => {
-                    index = node.right;
-                }
-                Ordering::Greater => {
-                    index = node.left;
-                }
-            }
+        if p.left == old_child {
+            p.left = new_child;
+        } else {
+            p.right = new_child;
         }
     }
 
-    pub fn delete_index(&mut self, index: u32) -> u32 {
-        let moved_up_node: u32;
-        let deleted_node_color: Color;
+    #[inline]
+    fn find_left_minimum(&self, mut i: u32) -> u32 {
+        while self.node(i).left != EMPTY_REF {
+            i = self.node(i).left;
+        }
+        i
+    }
 
+    pub(super) fn delete_index(&mut self, index: u32) {
         let node = self.node(index);
 
-        let is_root = index == self.root;
-        let is_single = node.left == EMPTY_REF || node.right == EMPTY_REF;
+        let not_two_children = node.left == EMPTY_REF || node.right == EMPTY_REF;
 
         // Node has zero or one child
-        if is_single {
-            deleted_node_color = node.color;
-            moved_up_node = self.delete_node_with_zero_or_one_child(index);
+        let delete_index= if not_two_children {
+            index
         } else {
             let successor_index = self.find_left_minimum(node.right);
-            let successor = self.node(successor_index);
-            deleted_node_color = successor.color;
+            let entity = self.node(successor_index).entity;
+            self.node_mut(index).entity = entity;
 
-            self.mut_node(index).value = successor.value.clone();
+            successor_index
+        };
 
-            moved_up_node = self.delete_node_with_zero_or_one_child(successor_index);
-        }
-
-        if moved_up_node == EMPTY_REF || deleted_node_color != Color::Black {
-            return if is_single {
-                self.parent(index)
-            } else if is_root {
-                self.root
-            } else {
-                index
-            };
-        }
+        let moved_up_node = self.delete_node_with_zero_or_one_child(delete_index);
 
         self.fix_red_black_properties_after_delete(moved_up_node);
 
@@ -419,26 +463,9 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
                 self.remove_parents_child(p_index, moved_up_node);
             }
         }
-
-        if is_single {
-            self.parent(index)
-        } else if is_root {
-            self.root
-        } else {
-            index
-        }
     }
 
-    #[inline(always)]
-    fn parent(&self, index: u32) -> u32 {
-        let parent = self.node(index).parent;
-        if parent == EMPTY_REF {
-            self.root
-        } else {
-            parent
-        }
-    }
-
+    #[inline]
     fn delete_node_with_zero_or_one_child(&mut self, n_index: u32) -> u32 {
         self.store.put_back(n_index);
         let node = self.node(n_index);
@@ -477,7 +504,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
     fn fix_red_black_properties_after_delete(&mut self, n_index: u32) {
         // Case 1: Examined node is root, end of recursion
-        if n_index == self.root {
+        if n_index == self.root || n_index == EMPTY_REF {
             // do not color root to black
             return;
         }
@@ -494,11 +521,11 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         // Cases 3+4: Black sibling with two black children
         if self.is_black(sibling.left) && self.is_black(sibling.right) {
-            self.mut_node(s_index).color = Color::Red;
+            self.node_mut(s_index).color = Color::Red;
             let p_index = self.node(n_index).parent;
 
             // Case 3: Black sibling with two black children + red parent
-            let parent = self.mut_node(p_index);
+            let parent = self.node_mut(p_index);
             if parent.color == Color::Red {
                 parent.color = Color::Black;
             } else {
@@ -511,6 +538,7 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
+    #[inline]
     fn handle_black_sibling_with_at_least_one_red_child(&mut self, n_index: u32, s_origin: u32) {
         let p_index = self.node(n_index).parent;
 
@@ -526,9 +554,9 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         // --> Recolor sibling and its child, and rotate around sibling
         if node_is_left_child && self.is_black(sibling_right) {
             if sibling_left != EMPTY_REF {
-                self.mut_node(sibling_left).color = Color::Black;
+                self.node_mut(sibling_left).color = Color::Black;
             }
-            self.mut_node(s_index).color = Color::Red;
+            self.node_mut(s_index).color = Color::Red;
             self.rotate_right(s_index);
             s_index = self.node(p_index).right;
 
@@ -537,9 +565,9 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
             sibling_right = sibling.right;
         } else if !node_is_left_child && self.is_black(sibling_left) {
             if sibling_right != EMPTY_REF {
-                self.mut_node(sibling_right).color = Color::Black;
+                self.node_mut(sibling_right).color = Color::Black;
             }
-            self.mut_node(s_index).color = Color::Red;
+            self.node_mut(s_index).color = Color::Red;
             self.rotate_left(s_index);
             s_index = self.node(p_index).left;
 
@@ -552,27 +580,28 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
 
         // Case 6: Black sibling with at least one red child + "outer nephew" is red
         // --> Recolor sibling + parent + sibling's child, and rotate around parent
-        self.mut_node(s_index).color = self.node(p_index).color;
-        self.mut_node(p_index).color = Color::Black;
+        self.node_mut(s_index).color = self.node(p_index).color;
+        self.node_mut(p_index).color = Color::Black;
         if node_is_left_child {
             if sibling_right != EMPTY_REF {
-                self.mut_node(sibling_right).color = Color::Black;
+                self.node_mut(sibling_right).color = Color::Black;
             }
             self.rotate_left(p_index)
         } else {
             if sibling_left != EMPTY_REF {
-                self.mut_node(sibling_left).color = Color::Black;
+                self.node_mut(sibling_left).color = Color::Black;
             }
             self.rotate_right(p_index)
         }
     }
 
+    #[inline]
     fn handle_red_sibling(&mut self, n_index: u32, s_index: u32) {
         // Recolor...
 
-        self.mut_node(s_index).color = Color::Black;
+        self.node_mut(s_index).color = Color::Black;
         let p_index = self.node(n_index).parent;
-        let parent = self.mut_node(p_index);
+        let parent = self.node_mut(p_index);
 
         parent.color = Color::Red;
 
@@ -596,70 +625,18 @@ impl<T: Clone + PartialEq + Eq + PartialOrd + Ord> Tree<T> {
         }
     }
 
-    pub fn find_left_minimum(&self, n_index: u32) -> u32 {
-        let mut i = n_index;
-        let mut left = self.node(i).left;
-        while left != EMPTY_REF {
-            let new_left = self.node(i).left;
-            i = left;
-            left = new_left;
+    #[inline]
+    fn remove_parents_child(&mut self, parent: u32, old_child: u32) {
+        let p = self.node_mut(parent);
+        debug_assert!(
+            p.left == old_child || p.right == old_child,
+            "Node is not a child of its parent"
+        );
+
+        if p.left == old_child {
+            p.left = EMPTY_REF;
+        } else {
+            p.right = EMPTY_REF;
         }
-        i
-    }
-
-    pub fn find(&self, value: T) -> Option<T> {
-        let mut index = self.root;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match node.value.cmp(&value) {
-                Ordering::Equal => {
-                    return Some(node.value.clone());
-                }
-                Ordering::Less => {
-                    index = node.right;
-                }
-                Ordering::Greater => {
-                    index = node.left;
-                }
-            }
-        }
-
-        None
-    }
-
-    pub fn find_index(&self, value: T) -> u32 {
-        let mut index = self.root;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match node.value.cmp(&value) {
-                Ordering::Equal => {
-                    return index;
-                }
-                Ordering::Less => {
-                    index = node.right;
-                }
-                Ordering::Greater => {
-                    index = node.left;
-                }
-            }
-        }
-
-        EMPTY_REF
-    }
-
-    pub fn height(&self) -> usize {
-        if self.root == EMPTY_REF { return 0; }
-        let mut node = self.node(self.root);
-        let mut height = 1;
-        while node.left != EMPTY_REF {
-            node = self.node(node.left);
-            if node.color == Color::Black {
-                height += 1;
-            }
-        }
-
-        height << 1
     }
 }
