@@ -23,21 +23,16 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
         debug_assert!(length > 0);
         let n = self.buffer.len() as u32;
         let l = length as u32;
-        let node = Node::default();
-        let q = n + l - 1;
         self.buffer.reserve(length);
+        self.buffer.resize(self.buffer.len() + length, Node::default());
         self.unused.reserve(length);
-        for i in 0..l {
-            self.buffer.push(node.clone());
-            self.unused.push(q - i);
-        }
+        self.unused.extend((n..n + l).rev());
     }
 
     #[inline(always)]
     pub(crate) fn get_free_index(&mut self) -> u32 {
         if self.unused.is_empty() {
-            let extra_capacity = self.unused.capacity() >> 1;
-            self.reserve(extra_capacity);
+            self.reserve(self.unused.capacity());
         }
         self.unused.pop().unwrap()
     }

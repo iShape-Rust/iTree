@@ -1,467 +1,763 @@
-use i_tree::node::{Color, EMPTY_REF};
-use i_tree::tree::Tree;
-
 #[cfg(test)]
 mod tests {
     use rand::prelude::SliceRandom;
-    use rand::thread_rng;
-    use i_tree::tree::Tree;
-    use crate::TreeValidation;
+    use rand::{Rng, rng};
+    use std::cmp::Ordering;
+    use i_tree::ExpiredKey;
+    use i_tree::key::array::IntoArray;
+    use i_tree::key::exp::KeyExpCollection;
+    use i_tree::key::list::KeyExpList;
+    use i_tree::key::tree::KeyExpTree;
+
+    struct Task {
+        time: i32,
+        val: i32,
+        exp: i32,
+    }
+
+    impl Task {
+        fn new(time: i32, val: i32, exp: i32) -> Self {
+            Self { time, val, exp }
+        }
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    struct Key {
+        key: i32,
+        exp: i32,
+    }
+
+    impl Key {
+        fn new(key: i32, exp: i32) -> Self {
+            Self { key, exp }
+        }
+    }
+
+    impl Ord for Key {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.key.cmp(&other.key)
+        }
+    }
+
+    impl Eq for Key {}
+
+    impl PartialEq<Self> for Key {
+        fn eq(&self, other: &Self) -> bool {
+            self.key.eq(&other.key)
+        }
+    }
+
+    impl PartialOrd<Self> for Key {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            self.key.partial_cmp(&other.key)
+        }
+    }
+
+    impl ExpiredKey<i32> for Key {
+        fn expiration(&self) -> i32 {
+            self.exp
+        }
+    }
 
     #[test]
     fn test_00() {
-        let tree = Tree::new(0, 8);
-        let a = tree.find(1).unwrap_or(i32::MAX);
-        assert_eq!(a, i32::MAX);
+        let mut list = KeyExpList::new(1);
+        let mut tree = KeyExpTree::new(8);
+        let k0 = Key::new(10, 10);
+        list.insert(k0, 1, 0);
+        tree.insert(k0, 1, 0);
+        let t0 = tree.get_value(0, k0).unwrap();
+        let l0 = list.get_value(0, k0).unwrap();
+
+        assert_eq!(t0, 1);
+        assert_eq!(l0, 1);
     }
 
     #[test]
     fn test_01() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(5);
-        let a0 = tree.find(1).unwrap_or(i32::MAX);
-        let a1 = tree.find(5).unwrap_or(i32::MAX);
-        let a2 = tree.find(7).unwrap_or(i32::MAX);
-        assert_eq!(a0, i32::MAX);
-        assert_eq!(a1, 5);
-        assert_eq!(a2, i32::MAX);
+        let mut list = KeyExpList::new(3);
+        let mut tree = KeyExpTree::new(8);
+
+        let k0 = Key::new(10, 10);
+        tree.insert(k0, 1, 0);
+        list.insert(k0, 1, 0);
+
+        let t0 = tree.get_value(0, Key::new(0, 10));
+        let l0 = list.get_value(0, Key::new(0, 10));
+
+        let t1 = tree.get_value(0, Key::new(10, 10));
+        let l1 = list.get_value(0, Key::new(10, 10));
+
+        let t2 = tree.get_value(0, Key::new(20, 10));
+        let l2 = list.get_value(0, Key::new(20, 10));
+
+        assert!(t0.is_none());
+        assert!(l0.is_none());
+        assert_eq!(t1.unwrap(), 1);
+        assert_eq!(l1.unwrap(), 1);
+        assert!(t2.is_none());
+        assert!(l2.is_none());
     }
 
     #[test]
     fn test_02() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(5);
-        tree.insert(3);
-        tree.insert(1);
-        let a0 = tree.find(5).unwrap_or(i32::MAX);
-        let a1 = tree.find(3).unwrap_or(i32::MAX);
-        let a2 = tree.find(1).unwrap_or(i32::MAX);
+        let mut list = KeyExpList::new(3);
+        let mut tree = KeyExpTree::new(8);
 
-        assert_eq!(a0, 5);
-        assert_eq!(a1, 3);
-        assert_eq!(a2, 1);
+        let k0 = Key::new(10, 10);
+
+        list.insert(k0, 1, 0);
+        tree.insert(k0, 1, 0);
+
+        let t0 = tree.get_value(11, Key::new(0, 10));
+        let l0 = list.get_value(11, Key::new(0, 10));
+        let t1 = tree.get_value(0, Key::new(10, 10));
+        let l1 = list.get_value(0, Key::new(10, 10));
+        let t2 = tree.get_value(0, Key::new(20, 10));
+        let l2 = list.get_value(0, Key::new(20, 10));
+
+        assert!(t0.is_none());
+        assert!(l0.is_none());
+        assert!(t1.is_none());
+        assert!(l1.is_none());
+        assert!(t2.is_none());
+        assert!(l2.is_none());
     }
 
     #[test]
     fn test_03() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(10);
-        tree.insert(15);
-        tree.insert(5);
-        tree.insert(4);
+        let mut list = KeyExpList::new(3);
+        let mut tree = KeyExpTree::new(8);
 
-        assert_eq!(tree.verify_red_property(tree.root), true);
+        let k0 = Key::new(10, 10);
+
+        list.insert(k0, 1, 0);
+        tree.insert(k0, 1, 0);
+
+        let t0 = tree.first_less_by(0, -1, |key| key.key.cmp(&1));
+        let l0 = list.first_less_by(0, -1, |key| key.key.cmp(&1));
+        let t1 = tree.first_less_by(0, -1, |key| key.key.cmp(&2));
+        let l1 = list.first_less_by(0, -1, |key| key.key.cmp(&2));
+        let t2 = tree.first_less_by(0, -1, |key| key.key.cmp(&3));
+        let l2 = list.first_less_by(0, -1, |key| key.key.cmp(&3));
+
+        assert_eq!(t0, -1);
+        assert_eq!(l0, -1);
+        assert_eq!(t1, -1);
+        assert_eq!(l1, -1);
+        assert_eq!(t2, -1);
+        assert_eq!(l2, -1);
     }
 
     #[test]
     fn test_04() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(10);
-        tree.insert(15);
-        tree.insert(5);
-        tree.insert(4);
-        tree.insert(6);
+        let mut vals = vec![3, 1, 2];
+        let keys = vals.iter().map(|&a| Key::new(a, 10));
 
-        tree.verify_height(tree.root);
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
+
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+
+        vals.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(0), vals);
+        assert_eq!(list.into_ordered_vec(0), vals);
     }
 
     #[test]
     fn test_05() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(10);
-        tree.insert(20);
-        tree.insert(30);
+        let vals = vec![0, 3, 5, 6];
+        let keys = vals.iter().map(|&a| Key::new(a, 10));
 
-        let value = tree.node(tree.root).value;
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
 
-        assert_eq!(true, value == 20 || value == 10, "Rotation not performed correctly.");
-        assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
 
-        tree.verify_height(tree.root);
+        for i in 0..10 {
+            let l = list.first_less_by(1, -1, |k| k.key.cmp(&i));
+            let t = tree.first_less_by(1, -1, |k| k.key.cmp(&i));
+            assert_eq!(l, t);
+        }
     }
 
     #[test]
     fn test_06() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(10);
-        tree.insert(15);
-        tree.insert(5);
-        tree.insert(4);
-        tree.insert(6);
-        tree.insert(20);
+        let vals = vec![0, 1, 2, 3];
+        let keys = vals.iter().map(|&a| Key::new(a, 10));
 
-        tree.delete(&15);
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
 
-        assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-        assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
-
-        tree.verify_height(tree.root);
-    }
-
-    #[test]
-    fn test_7() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(40);
-        tree.insert(20);
-        tree.insert(60);
-        tree.insert(10);
-        tree.insert(30);
-        tree.insert(50);
-        tree.insert(70);
-
-        assert_eq!(tree.value(tree.root), 40, "Root data is incorrect.");
-        assert_eq!(tree.left_value(tree.root), 20, "Left child of root is incorrect.");
-        assert_eq!(tree.right_value(tree.root), 60, "Right child of root is incorrect.");
-    }
-
-    #[test]
-    fn test_8() {
-        let mut tree = Tree::new(0, 8);
-        tree.insert(2);
-        tree.insert(1);
-        tree.insert(6);
-        tree.insert(4);
-        tree.insert(3);
-        tree.insert(5);
-
-        tree.delete(&2);
-        tree.delete(&1);
-
-        assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-        assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
-    }
-
-    #[test]
-    fn test_9a() {
-        let mut rng = thread_rng();
-        let mut values: Vec<i32> = (1..=100).collect();
-        for _ in 0..100 {
-            values.shuffle(&mut rng);
-            let mut tree = Tree::new(0, 128);
-            for i in 0..values.len() {
-                tree.insert(values[i])
-            }
-
-            for i in 0..20 {
-                tree.delete(&values[i])
-            }
-
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
+
+        assert_eq!(tree.into_ordered_vec(0), vals);
+        assert_eq!(list.into_ordered_vec(0), vals);
     }
 
     #[test]
-    fn test_9b() {
-        let mut rng = thread_rng();
-        let mut values: Vec<i32> = (1..=100).collect();
-        for _ in 0..100 {
-            values.shuffle(&mut rng);
-            let mut tree = Tree::new(0, 128);
-            for i in 0..values.len() {
-                tree.insert(values[i])
-            }
+    fn test_077() {
+        let vals = vec![0, 1, 2, 3, 4, 5];
+        let keys = vals.iter().map(|&a| Key::new(a, 10));
 
-            for i in 0..values.len() {
-                tree.delete(&values[i])
-            }
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
 
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
+
+        assert_eq!(tree.into_ordered_vec(0), vals);
+        assert_eq!(list.into_ordered_vec(0), vals);
     }
 
     #[test]
-    fn test_9c() {
-        let mut rng = thread_rng();
-        let mut values: Vec<i32> = (1..=100).collect();
-        for _ in 0..100 {
-            values.shuffle(&mut rng);
-            let mut tree = Tree::new(0, 128);
-            let mut j = 0;
-            while j < values.len() - 2 {
-                tree.insert(values[j]);
-                tree.insert(values[j + 1]);
-                tree.insert(values[j + 2]);
-                tree.delete(&values[j]);
-                tree.insert(values[j]);
-                j += 3
-            }
+    fn test_07() {
+        let vals = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let keys = vals.iter().map(|&a| Key::new(a, 10));
 
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
+
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
+
+        assert_eq!(tree.into_ordered_vec(0), vals);
+        assert_eq!(list.into_ordered_vec(0), vals);
+    }
+
+    #[test]
+    fn test_08() {
+        let vals = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let keys = vals.iter().rev().map(|&a| Key::new(a, 10));
+
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
+
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+
+        assert_eq!(tree.into_ordered_vec(0), vals);
+        assert_eq!(list.into_ordered_vec(0), vals);
+    }
+
+    #[test]
+    fn test_09() {
+        let mut vals = vec![2, 8, 9, 7, 5, 1, 4, 6, 3];
+        let keys = vals.iter().rev().map(|&a| Key::new(a, 10));
+
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys.len());
+
+        for key in keys {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+
+        vals.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(0), vals);
+        assert_eq!(list.into_ordered_vec(0), vals);
     }
 
     #[test]
     fn test_10() {
-        let mut rng = thread_rng();
-        let mut values: Vec<i32> = (1..=100).collect();
-        values.shuffle(&mut rng);
-        let mut tree = Tree::new(0, 128);
-        for i in 0..values.len() {
-            tree.insert(values[i])
+        let vals0 = vec![2, 18, 16, 4, 14, 8, 6, 10, 12];
+        let mut vals1 = vec![7, 9, 15, 11, 13, 1, 17, 19, 3, 5];
+
+        let keys0 = vals0.iter().rev().map(|&a| Key::new(a, 10));
+        let keys1 = vals1.iter().rev().map(|&a| Key::new(a, 20));
+
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys0.len() + keys1.len());
+
+        for key in keys0 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+        for key in keys1 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
 
-        for i in 0..values.len() {
-            let res = tree.find(values[i]).unwrap_or(i32::MAX);
-            assert_eq!(values[i], res, "Value not found after random insertions.");
-        }
+        vals1.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(11), vals1);
+        assert_eq!(list.into_ordered_vec(11), vals1);
     }
 
     #[test]
     fn test_11() {
-        let mut rng = thread_rng();
-        let mut values: Vec<i32> = (1..=100).collect();
-        values.shuffle(&mut rng);
-        let mut tree = Tree::new(0, 128);
-        for i in 0..values.len() {
-            tree.insert(values[i])
+        let vals0 = vec![12, 16, 4, 6, 8, 18, 2, 10, 14];
+        let mut vals1 = vec![3, 15, 13, 5, 17, 1, 7, 19, 11, 9];
+
+        let keys0 = vals0.iter().rev().map(|&a| Key::new(a, 10));
+        let keys1 = vals1.iter().rev().map(|&a| Key::new(a, 20));
+
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys0.len() + keys1.len());
+
+        for key in keys0 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+        for key in keys1 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
 
-        let depth = tree.max_depth(tree.root);
-        let expected_max_depth = (2.0 * 101f64.log2()).round() as usize;
-        assert_eq!(true, depth <= expected_max_depth);
+        vals1.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(11), vals1);
+        assert_eq!(list.into_ordered_vec(11), vals1);
     }
 
     #[test]
     fn test_12() {
-        for _ in 0..100 {
-            let mut tree = Tree::new(0, 16);
-            let mut rng = thread_rng();
-            let mut values: Vec<i32> = (1..=7).collect();
-            values.shuffle(&mut rng);
-            // print!("{:?}", &values);
-            for value in values.iter() {
-                tree.insert(value.clone());
-            }
+        let vals0 = vec![8, 4, 2, 16, 18, 12, 10, 6, 14];
+        let mut vals1 = vec![5, 3, 11, 13, 19, 7, 1, 15, 17, 9];
 
-            for i in 0..3 {
-                tree.delete(&values[i]);
-            }
+        let keys0 = vals0.iter().rev().map(|&a| Key::new(a, 10));
+        let keys1 = vals1.iter().rev().map(|&a| Key::new(a, 20));
 
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys0.len() + keys1.len());
+
+        for key in keys0 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
+        for key in keys1 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+
+        vals1.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(11), vals1);
+        assert_eq!(list.into_ordered_vec(11), vals1);
     }
 
     #[test]
     fn test_13() {
-        let mut tree = Tree::new(0, 16);
-        let mut rng = thread_rng();
-        let mut values: Vec<i32> = (1..=7).collect();
-        values.shuffle(&mut rng);
-        // print!("{:?}", &values);
-        let mut j = 0;
-        while j < values.len() - 2 {
-            tree.insert(values[j]);
-            tree.insert(values[j + 1]);
-            tree.insert(values[j + 2]);
-            tree.delete(&values[j]);
-            j += 3
+        let vals0 = vec![16, 14, 18, 12, 6, 4, 10, 8, 2];
+        let mut vals1 = vec![15, 13, 9, 7, 1, 17, 5, 11, 3];
+
+        let keys0 = vals0.iter().rev().map(|&a| Key::new(a, 10));
+        let keys1 = vals1.iter().rev().map(|&a| Key::new(a, 20));
+
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys0.len() + keys1.len());
+
+        for key in keys0 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+        for key in keys1 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
 
-        assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-        assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        vals1.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(11), vals1);
+        assert_eq!(list.into_ordered_vec(11), vals1);
     }
 
     #[test]
     fn test_14() {
-        let mut tree = Tree::new(0, 16);
-        let values = vec![1, 6, 2, 5, 4];
+        let vals0 = vec![
+            32, 34, 2, 4, 16, 10, 28, 24, 12, 30, 18, 6, 36, 22, 14, 20, 8, 26,
+        ];
+        let mut vals1 = vec![
+            27, 1, 17, 13, 23, 29, 21, 37, 15, 7, 9, 35, 5, 3, 25, 31, 19, 11, 33,
+        ];
 
-        for value in values.iter() {
-            tree.insert(value.clone());
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        let keys0 = vals0.iter().rev().map(|&a| Key::new(a, 10));
+        let keys1 = vals1.iter().rev().map(|&a| Key::new(a, 20));
+
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(keys0.len() + keys1.len());
+
+        for key in keys0 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
+        }
+        for key in keys1 {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
 
-        for i in 0..2 {
-            tree.delete(&values[i]);
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
-        }
+        vals1.sort_unstable();
+
+        assert_eq!(tree.into_ordered_vec(11), vals1);
+        assert_eq!(list.into_ordered_vec(11), vals1);
     }
 
     #[test]
     fn test_15() {
-        let mut tree = Tree::new(0, 16);
-        let values = vec![5, 6, 1, 3, 4, 2];
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(20);
 
-        for value in values.iter() {
-            tree.insert(value.clone());
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        let keys = vec![
+            Key::new(8, 4),
+            Key::new(2, 4),
+            Key::new(5, 3),
+            Key::new(0, 5),
+        ];
+
+        for &key in keys.iter() {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
 
-        for i in 0..2 {
-            tree.delete(&values[i]);
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
-        }
+        let l0 = list.first_less_by(3, -1, |k| k.key.cmp(&2));
+        let t0 = tree.first_less_by(3, -1, |k| k.key.cmp(&2));
+        assert_eq!(l0, t0);
+
+        tree.insert(Key::new(1, 5), 1, 3);
+        list.insert(Key::new(1, 5), 1, 3);
+
+        let l1 = list.first_less_by(4, -1, |k| k.key.cmp(&2));
+        let t1 = tree.first_less_by(4, -1, |k| k.key.cmp(&2));
+        assert_eq!(l1, t1);
     }
 
     #[test]
     fn test_16() {
-        let mut tree = Tree::new(0, 16);
-        let values = vec![4, 1, 6, 3, 2, 5];
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(20);
 
-        for value in values.iter() {
-            tree.insert(value.clone());
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        let keys = vec![Key::new(0, 2), Key::new(1, 1)];
+
+        for &key in keys.iter() {
+            tree.insert(key, key.key, 0);
+            list.insert(key, key.key, 0);
         }
 
-        for i in 0..2 {
-            tree.delete(&values[i]);
-            assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-            assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
-        }
+        let l0 = list.first_less_by(1, -1, |k| k.key.cmp(&4));
+        let t0 = tree.first_less_by(1, -1, |k| k.key.cmp(&4));
+        assert_eq!(l0, t0);
+
+        tree.insert(Key::new(4, 5), 4, 1);
+        list.insert(Key::new(4, 5), 4, 1);
+
+        let l1 = list.first_less_by(1, -1, |k| k.key.cmp(&1));
+        let t1 = tree.first_less_by(1, -1, |k| k.key.cmp(&1));
+        assert_eq!(l1, t1);
+
+        let l2 = list.first_less_by(2, -1, |k| k.key.cmp(&0));
+        let t2 = tree.first_less_by(2, -1, |k| k.key.cmp(&0));
+        assert_eq!(l2, t2);
     }
 
     #[test]
     fn test_17() {
-        let mut tree = Tree::new(0, 16);
+        let mut tree = KeyExpTree::new(8);
+        let mut list = KeyExpList::new(20);
 
-        tree.insert(6);
-        tree.insert(7);
-        tree.insert(2);
-        tree.delete(&6);
+        let key = Key::new(6, 1);
+        tree.insert(key, key.key, 0);
+        list.insert(key, key.key, 0);
 
-        tree.insert(1);
-        tree.insert(4);
-        tree.insert(3);
-        tree.delete(&1);
+        let l = list.first_less_by(0, -1, |k| k.key.cmp(&5));
+        let t = tree.first_less_by(0, -1, |k| k.key.cmp(&5));
+        assert_eq!(l, t);
 
-        tree.insert(5);
+        let key = Key::new(5, 1);
+        tree.insert(key, key.key, 0);
+        list.insert(key, key.key, 0);
 
-        assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-        assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
+        let l = list.first_less_by(0, -1, |k| k.key.cmp(&4));
+        let t = tree.first_less_by(0, -1, |k| k.key.cmp(&4));
+        assert_eq!(l, t);
+
+        let key = Key::new(4, 1);
+        tree.insert(key, key.key, 0);
+        list.insert(key, key.key, 0);
+
+        let l = list.first_less_by(1, -1, |k| k.key.cmp(&8));
+        let t = tree.first_less_by(1, -1, |k| k.key.cmp(&8));
+        assert_eq!(l, t);
+
+        let key = Key::new(8, 2);
+        tree.insert(key, key.key, 1);
+        list.insert(key, key.key, 1);
+
+        let l = list.first_less_by(1, -1, |k| k.key.cmp(&0));
+        let t = tree.first_less_by(1, -1, |k| k.key.cmp(&0));
+        assert_eq!(l, t);
+
+        let key = Key::new(0, 3);
+        tree.insert(key, key.key, 1);
+        list.insert(key, key.key, 1);
+
+        let l = list.first_less_by(2, -1, |k| k.key.cmp(&7));
+        let t = tree.first_less_by(2, -1, |k| k.key.cmp(&7));
+        assert_eq!(l, t);
+
+        let key = Key::new(7, 4);
+        tree.insert(key, key.key, 2);
+        list.insert(key, key.key, 2);
+
+        let l = list.first_less_by(3, -1, |k| k.key.cmp(&2));
+        let t = tree.first_less_by(3, -1, |k| k.key.cmp(&2));
+        assert_eq!(l, t);
+
+        let key = Key::new(2, 5);
+        tree.insert(key, key.key, 3);
+        list.insert(key, key.key, 3);
+
+        let l = list.first_less_by(3, -1, |k| k.key.cmp(&6));
+        let t = tree.first_less_by(3, -1, |k| k.key.cmp(&6));
+        assert_eq!(l, t);
     }
 
     #[test]
     fn test_18() {
-        let mut tree = Tree::new(0, 16);
+        let tasks = vec![
+            Task::new(0, 3, 0),
+            Task::new(0, 3, 42),
+            Task::new(1, 2, 0),
+            Task::new(1, 2, 20),
+            Task::new(2, 8, 0),
+            Task::new(2, 8, 22),
+            Task::new(2, 3, 0),
+            Task::new(3, 22, 0),
+            Task::new(3, 22, 15),
+            Task::new(4, 29, 0),
+            Task::new(4, 29, 19),
+            Task::new(5, 14, 0),
+            Task::new(5, 14, 20),
+            Task::new(5, 14, 0),
+            Task::new(6, 25, 0),
+            Task::new(6, 25, 46),
+            Task::new(6, 26, 0),
+            Task::new(6, 26, 18),
+            Task::new(7, 6, 0),
+            Task::new(7, 6, 35),
+            Task::new(8, 26, 0),
+            Task::new(9, 4, 0),
+            Task::new(9, 4, 46),
+            Task::new(9, 13, 0),
+            Task::new(9, 13, 32),
+            Task::new(10, 2, 0),
+            Task::new(10, 19, 0),
+            Task::new(10, 19, 46),
+            Task::new(11, 13, 0),
+            Task::new(12, 10, 0),
+            Task::new(12, 10, 32),
+            Task::new(12, 22, 0),
+            Task::new(13, 2, 0),
+            Task::new(14, 17, 0),
+            Task::new(14, 17, 63),
+            Task::new(14, 25, 0),
+            Task::new(15, 24, 0),
+            Task::new(15, 24, 41),
+            Task::new(16, 15, 0),
+            Task::new(16, 15, 38),
+            Task::new(17, 27, 0),
+            Task::new(17, 27, 43),
+            Task::new(17, 10, 0),
+            Task::new(18, 22, 0),
+            Task::new(18, 22, 35),
+            Task::new(19, 3, 0),
+        ];
 
-        tree.insert(10);
-        tree.insert(20);
+        let mut tree: KeyExpTree<Key, i32, i32> = KeyExpTree::new(8);
+        let mut list: KeyExpList<Key, i32, i32> = KeyExpList::new(200);
 
-        tree.delete(&10);
-        tree.insert(0);
-        tree.insert(3);
-        tree.insert(6);
-
-        tree.delete(&3);
-        tree.insert(2);
-
-        tree.delete(&2);
-        tree.insert(4);
-
-        tree.delete(&6);
-        tree.delete(&0);
-        tree.delete(&4);
-
-        tree.insert(8);
-
-        tree.delete(&20);
-        tree.delete(&8);
-
-        assert_eq!(true, tree.verify_red_property(tree.root), "Red node property violated after rotations.");
-        assert_eq!(true, tree.verify_black_height_consistency(tree.root), "Black height inconsistent after deletion.");
-    }
-}
-
-trait TreeValidation {
-    fn value(&self, index: u32) -> i32;
-    fn left_value(&self, index: u32) -> i32;
-    fn right_value(&self, index: u32) -> i32;
-    fn verify_red_property(&self, index: u32) -> bool;
-    fn verify_height(&self, index: u32) -> usize;
-    fn verify_black_height_consistency(&self, index: u32) -> bool;
-    fn black_height(&self, index: u32) -> (bool, usize);
-    fn max_depth(&self, index: u32) -> usize;
-}
-
-impl TreeValidation for Tree<i32> {
-    fn value(&self, index: u32) -> i32 {
-        if index == EMPTY_REF { return i32::MAX; }
-        self.node(index).value
-    }
-
-    fn left_value(&self, index: u32) -> i32 {
-        if index == EMPTY_REF { return i32::MAX; }
-        let node = self.node(index);
-        if node.left == EMPTY_REF { return i32::MAX; }
-
-        self.node(node.left).value
-    }
-
-    fn right_value(&self, index: u32) -> i32 {
-        if index == EMPTY_REF { return i32::MAX; }
-        let node = self.node(index);
-        if node.right == EMPTY_REF { return i32::MAX; }
-
-        self.node(node.right).value
-    }
-
-    fn verify_red_property(&self, index: u32) -> bool {
-        if index == EMPTY_REF { return true; }
-
-        let node = self.node(index);
-
-        if node.color == Color::Red {
-            let is_left_black = self.is_black(node.left);
-            let is_right_black = self.is_black(node.right);
-
-            if !(is_left_black && is_right_black) {
-                return false;
+        for i in 0..tasks.len() - 1 {
+            let task = &tasks[i];
+            if task.exp == 0 {
+                let list_result = list.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+                let tree_result = tree.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+                assert_eq!(list_result, tree_result);
+            } else {
+                tree.insert(Key::new(task.val, task.exp), task.val, task.time);
+                list.insert(Key::new(task.val, task.exp), task.val, task.time);
             }
         }
 
-        self.verify_red_property(node.left) && self.verify_red_property(node.right)
+        // println!("list: {:?}", &list.into_ordered_vec(73));
+
+        let task = &tasks.last().unwrap();
+        let list_result = list.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+        let tree_result = tree.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+        assert_eq!(list_result, tree_result);
     }
 
-    fn verify_height(&self, index: u32) -> usize {
-        if index == EMPTY_REF { return 1; }
+    #[test]
+    fn test_19() {
+        let tasks = vec![
+            Task::new(0, 0, 0),
+            Task::new(0, 0, 25),
+            Task::new(0, 6, 0),
+            Task::new(0, 6, 22),
+            Task::new(1, 15, 0),
+            Task::new(1, 15, 4),
+            Task::new(2, 11, 0),
+            Task::new(2, 11, 14),
+            Task::new(3, 3, 0),
+            Task::new(3, 3, 28),
+        ];
 
-        let node = self.node(index);
+        let mut tree: KeyExpTree<Key, i32, i32> = KeyExpTree::new(8);
+        let mut list: KeyExpList<Key, i32, i32> = KeyExpList::new(200);
 
-        let left_height = self.verify_height(node.left);
-        let right_height = self.verify_height(node.right);
-        assert_eq!(left_height, right_height, "Black height inconsistent.");
+        for task in tasks {
+            if task.exp == 0 {
+                let list_result = list.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+                let tree_result = tree.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+                assert_eq!(list_result, tree_result);
+            } else {
+                tree.insert(Key::new(task.val, task.exp), task.val, task.time);
+                list.insert(Key::new(task.val, task.exp), task.val, task.time);
+            }
+        }
 
-        if node.color == Color::Black {
-            left_height + 1
-        } else {
-            left_height
+        // println!("list: {:?}", &list.into_ordered_vec(73));
+
+        let list_result = list.first_less_by(4, -1, |k| k.key.cmp(&16));
+        let tree_result = tree.first_less_by(4, -1, |k| k.key.cmp(&16));
+        assert_eq!(list_result, tree_result);
+    }
+
+    #[test]
+    fn test_random_00() {
+        let mut array = Vec::with_capacity(100);
+        for n in 1..1000i32 {
+            let mut tree = KeyExpTree::new(8);
+            let mut list = KeyExpList::new(n as usize);
+            for i in 1..n {
+                array.push(i);
+                tree.insert(Key::new(i, 10), i, 0);
+                list.insert(Key::new(i, 10), i, 0);
+            }
+
+            assert_eq!(tree.into_ordered_vec(0), array);
+            assert_eq!(list.into_ordered_vec(0), array);
+            array.clear();
         }
     }
 
-    fn verify_black_height_consistency(&self, index: u32) -> bool {
-        self.black_height(index).0
-    }
+    #[test]
+    fn test_random_01() {
+        let mut array = Vec::with_capacity(100);
+        for n in 1..1000i32 {
+            let mut tree = KeyExpTree::new(8);
+            let mut list = KeyExpList::new(n as usize);
+            for i in 1..n {
+                array.push(i);
+                let j = n - i;
+                tree.insert(Key::new(j, 10), j, 0);
+                list.insert(Key::new(i, 10), i, 0);
+            }
 
-    fn black_height(&self, index: u32) -> (bool, usize) {
-        if index == EMPTY_REF { return (true, 1); }
-        let node = self.node(index);
-        let (left_consistent, left_height) = self.black_height(node.left);
-        let (right_consistent, right_height) = self.black_height(node.right);
-
-        let consistent = left_consistent && right_consistent && left_height == right_height;
-
-        if node.color == Color::Black {
-            (consistent, left_height + 1)
-        } else {
-            (consistent, left_height)
+            assert_eq!(tree.into_ordered_vec(0), array);
+            assert_eq!(list.into_ordered_vec(0), array);
+            array.clear();
         }
     }
 
-    fn max_depth(&self, index: u32) -> usize {
-        if index == EMPTY_REF { return 0; }
-        let node = self.node(index);
+    #[test]
+    fn test_random_02() {
+        let template: Vec<i32> = (1..300).collect();
+        let mut array: Vec<i32> = template.clone();
+        let mut rng = rng();
+        for _ in 1..300 {
+            array.shuffle(&mut rng);
+            let mut tree = KeyExpTree::new(8);
+            let mut list = KeyExpList::new(array.len());
+            for &i in array.iter() {
+                tree.insert(Key::new(i, 10), i, 0);
+                list.insert(Key::new(i, 10), i, 0);
+            }
 
-        let left_depth = self.max_depth(node.left);
-        let right_depth = self.max_depth(node.right);
-        1 + left_depth.max(right_depth)
+            assert_eq!(tree.into_ordered_vec(0), template);
+            assert_eq!(list.into_ordered_vec(0), template);
+        }
+    }
+
+    #[test]
+    fn test_random_03() {
+        let r = 1..100;
+        let mut evens: Vec<i32> = r.clone().filter(|x| x % 2 == 0).collect();
+        let mut odds: Vec<i32> = r.filter(|x| x % 2 != 0).collect();
+        let template = odds.clone();
+        let mut rng = rng();
+        for _ in 1..1000 {
+            let mut tree = KeyExpTree::new(8);
+            let mut list = KeyExpList::new(evens.len() + odds.len());
+            evens.shuffle(&mut rng);
+            odds.shuffle(&mut rng);
+            for &o in odds.iter() {
+                tree.insert(Key::new(o, 20), o, 0);
+                list.insert(Key::new(o, 20), o, 0);
+            }
+            for &e in evens.iter() {
+                tree.insert(Key::new(e, 10), e, 0);
+                list.insert(Key::new(e, 10), e, 0);
+            }
+
+            assert_eq!(tree.into_ordered_vec(11), template);
+            assert_eq!(list.into_ordered_vec(11), template);
+        }
+    }
+
+    #[test]
+    fn test_random_04() {
+        let n = 100;
+
+        let mut rng = rng();
+        let mut task = Vec::new();
+
+        let mut list: KeyExpList<Key, i32, i32> = KeyExpList::new(n);
+        let mut tree: KeyExpTree<Key, i32, i32> = KeyExpTree::new(n);
+        for _ in 0..1000 {
+            let mut t = 0.0;
+            let mut numbers = vec![-1i32; n];
+            while t < 1000.0 {
+                let time = t as i32;
+                let index = rng.random_range(0..n);
+                let old_time = numbers[index];
+                let val = index as i32;
+
+                let list_result = list.first_less_by(time, -1, |k| k.key.cmp(&val));
+                let tree_result = tree.first_less_by(time, -1, |k| k.key.cmp(&val));
+
+                task.push(Task { time, val, exp: 0 });
+
+                assert_eq!(list_result, tree_result);
+                if old_time < time {
+                    let exp = (t + rng.random_range(1.0..50.0)) as i32;
+                    tree.insert(Key::new(val, exp), val, time);
+                    list.insert(Key::new(val, exp), val, time);
+                    numbers[index] = exp;
+
+                    task.push(Task { time, val, exp });
+                }
+
+                t += rng.random_range(0.5..5.0);
+            }
+            task.clear();
+            tree.clear();
+            list.clear();
+        }
     }
 }

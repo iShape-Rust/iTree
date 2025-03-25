@@ -113,10 +113,8 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     fn expire_all(&mut self, time: E) {
         let n = self.store.buffer.len() as u32;
         for i in 1..n {
-            if self.is_part_of_the_tree(i) {
-                if self.node(i).entity.key.expiration() < time {
+            if self.is_part_of_the_tree(i) && self.node(i).entity.key.expiration() < time {
                     self.delete_index(i);
-                }
             }
         }
     }

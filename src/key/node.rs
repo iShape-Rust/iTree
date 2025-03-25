@@ -9,7 +9,7 @@ pub(crate) enum Color {
     Black,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(crate) struct Node<K, E, V> {
     pub(crate) parent: u32,
     pub(crate) left: u32,

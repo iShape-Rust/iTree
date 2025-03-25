@@ -9,19 +9,20 @@ use crate::key::entity::Entity;
 pub struct KeyExpTree<K, E, V> {
     pub(super) store: Pool<K, E, V>,
     pub(super) root: u32,
-    nil_index: u32,
     phantom_data: PhantomData<E>
 }
+
+const NIL_INDEX: u32 = 0;
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     #[inline]
     pub fn new(capacity: usize) -> Self {
         let mut store = Pool::new(capacity);
         let nil_index = store.get_free_index();
+        assert_eq!(nil_index, NIL_INDEX);
         Self {
             store,
             root: EMPTY_REF,
-            nil_index,
             phantom_data: Default::default(),
         }
     }
@@ -147,9 +148,9 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         index
     }
 
-    #[inline(always)]
+    #[inline]
     fn create_nil_node(&mut self, parent: u32) {
-        let node = self.node_mut(self.nil_index);
+        let node = self.node_mut(NIL_INDEX);
         node.parent = parent;
         node.left = EMPTY_REF;
         node.right = EMPTY_REF;
@@ -233,32 +234,28 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
             return;
         }
 
-        let mut p_index = EMPTY_REF;
-        let mut is_left = false;
         let key = entity.key;
 
-        while index != EMPTY_REF {
-            p_index = index;
-            let node = self.node(index);
-
-            is_left = key < node.entity.key;
-            if is_left {
-                is_left = true;
+        loop {
+            let p_index = index;
+            if key < self.node(index).entity.key {
                 index = self.expire_left(index, time);
+                if index == EMPTY_REF {
+                    self.insert_as_left(entity, p_index);
+                    return;
+                }
             } else {
                 index = self.expire_right(index, time);
+                if index == EMPTY_REF {
+                    self.insert_as_right(entity, p_index);
+                    return;
+                }
             }
-        }
-
-        if p_index == EMPTY_REF {
-            self.insert_root(entity);
-        } else {
-            self.insert_with_parent(entity, p_index, is_left);
         }
     }
 
     #[inline]
-    fn insert_with_parent(&mut self, entity: Entity<K, E, V>, p_index: u32, is_left: bool) {
+    fn insert_new(&mut self, entity: Entity<K, E, V>, p_index: u32) -> u32 {
         let new_index = self.store.get_free_index();
         let new_node = self.node_mut(new_index);
         new_node.parent = p_index;
@@ -267,18 +264,33 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         new_node.color = Color::Red;
         new_node.entity = entity;
 
-        let parent = self.node_mut(p_index);
+        new_index
+    }
 
-        if is_left {
-            parent.left = new_index;
-        } else {
-            parent.right = new_index;
-        }
+    #[inline]
+    fn insert_as_left(&mut self, entity: Entity<K, E, V>, p_index: u32) {
+        let new_index = self.insert_new(entity, p_index);
+
+        let parent = self.node_mut(p_index);
+        parent.left = new_index;
 
         if parent.color == Color::Red {
             self.fix_red_black_properties_after_insert(new_index, p_index);
         }
     }
+
+    #[inline]
+    fn insert_as_right(&mut self, entity: Entity<K, E, V>, p_index: u32) {
+        let new_index = self.insert_new(entity, p_index);
+
+        let parent = self.node_mut(p_index);
+        parent.right = new_index;
+
+        if parent.color == Color::Red {
+            self.fix_red_black_properties_after_insert(new_index, p_index);
+        }
+    }
+
 
     fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
         // parent is red!
@@ -346,43 +358,22 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         }
     }
 
-    #[inline]
-    fn get_uncle(&self, p_index: u32) -> u32 {
-        let parent = self.node(p_index);
-        if parent.parent == EMPTY_REF {
-            return EMPTY_REF;
-        }
-
-        let grandparent = self.node(parent.parent);
-
-        debug_assert!(
-            grandparent.left == p_index || grandparent.right == p_index,
-            "Parent is not a child of its grandparent"
-        );
-
-        if grandparent.left == p_index {
-            grandparent.right
-        } else {
-            grandparent.left
-        }
-    }
-
     fn rotate_right(&mut self, index: u32) {
         let n = self.node(index);
         let p = n.parent;
-
         let lt_index = n.left;
-        let lt_right = self.node(lt_index).right;
+
+        let lt_node = self.node_mut(lt_index);
+        let lt_right = lt_node.right;
+        lt_node.right = index;
 
         if lt_right != EMPTY_REF {
             self.node_mut(lt_right).parent = index;
-            self.node_mut(index).left = lt_right;
-        } else {
-            self.node_mut(index).left = EMPTY_REF;
         }
 
-        self.node_mut(index).parent = lt_index;
-        self.node_mut(lt_index).right = index;
+        let node = self.node_mut(index);
+        node.left = lt_right;
+        node.parent = lt_index;
 
         self.replace_parents_child(p, index, lt_index);
     }
@@ -390,19 +381,18 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     fn rotate_left(&mut self, index: u32) {
         let n = self.node(index);
         let p = n.parent;
-
         let rt_index = n.right;
-        let rt_left = self.node(rt_index).left;
+
+        let rt_node = self.node_mut(rt_index);
+        let rt_left = rt_node.left;
+        rt_node.left = index;
 
         if rt_left != EMPTY_REF {
             self.node_mut(rt_left).parent = index;
-            self.node_mut(index).right = rt_left;
-        } else {
-            self.node_mut(index).right = EMPTY_REF;
         }
-
-        self.node_mut(index).parent = rt_index;
-        self.node_mut(rt_index).left = index;
+        let node = self.node_mut(index);
+        node.right = rt_left;
+        node.parent = rt_index;
 
         self.replace_parents_child(p, index, rt_index);
     }
@@ -452,21 +442,11 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
             successor_index
         };
 
-        let moved_up_node = self.delete_node_with_zero_or_one_child(delete_index);
-
-        self.fix_red_black_properties_after_delete(moved_up_node);
-
-        if moved_up_node == self.nil_index {
-            let p_index = self.node(moved_up_node).parent;
-
-            if p_index != EMPTY_REF {
-                self.remove_parents_child(p_index, moved_up_node);
-            }
-        }
+        self.delete_node_with_zero_or_one_child(delete_index);
     }
 
     #[inline]
-    fn delete_node_with_zero_or_one_child(&mut self, n_index: u32) -> u32 {
+    fn delete_node_with_zero_or_one_child(&mut self, n_index: u32) {
         self.store.put_back(n_index);
         let node = self.node(n_index);
         let nd_left = node.left;
@@ -477,11 +457,11 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         if nd_left != EMPTY_REF {
             // Node has ONLY a left child --> replace by its left child
             self.replace_parents_child(nd_parent, n_index, nd_left);
-            nd_left // moved-up node
+            self.fix_red_black_properties_after_delete(nd_left);
         } else if nd_right != EMPTY_REF {
             // Node has ONLY a right child --> replace by its right child
             self.replace_parents_child(nd_parent, n_index, nd_right);
-            nd_right // moved-up node
+            self.fix_red_black_properties_after_delete(nd_right);
         } else {
             // Node has no children -->
             // * node is red --> just remove it
@@ -489,15 +469,14 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
             if nd_parent != EMPTY_REF {
                 if nd_color == Color::Black {
                     self.create_nil_node(nd_parent);
-                    self.replace_parents_child(nd_parent, n_index, self.nil_index);
-                    self.nil_index
+                    self.set_nil_parents_child(nd_parent, n_index);
+                    self.fix_red_black_properties_after_delete(NIL_INDEX);
+                    self.fix_parents_nil_child()
                 } else {
                     self.remove_parents_child(nd_parent, n_index);
-                    EMPTY_REF
                 }
             } else {
                 self.root = EMPTY_REF;
-                EMPTY_REF
             }
         }
     }
@@ -538,7 +517,6 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         }
     }
 
-    #[inline]
     fn handle_black_sibling_with_at_least_one_red_child(&mut self, n_index: u32, s_origin: u32) {
         let p_index = self.node(n_index).parent;
 
@@ -595,7 +573,6 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         }
     }
 
-    #[inline]
     fn handle_red_sibling(&mut self, n_index: u32, s_index: u32) {
         // Recolor...
 
@@ -610,6 +587,24 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
             self.rotate_left(p_index)
         } else {
             self.rotate_right(p_index)
+        }
+    }
+
+    #[inline]
+    fn get_uncle(&self, p_index: u32) -> u32 {
+        let parent = self.node(p_index);
+        debug_assert!(parent.parent != EMPTY_REF);
+        let grandparent = self.node(parent.parent);
+
+        debug_assert!(
+            grandparent.left == p_index || grandparent.right == p_index,
+            "Parent is not a child of its grandparent"
+        );
+
+        if grandparent.left == p_index {
+            grandparent.right
+        } else {
+            grandparent.left
         }
     }
 
@@ -634,6 +629,37 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         );
 
         if p.left == old_child {
+            p.left = EMPTY_REF;
+        } else {
+            p.right = EMPTY_REF;
+        }
+    }
+
+    #[inline]
+    fn set_nil_parents_child(&mut self, parent: u32, old_child: u32) {
+        let p = self.node_mut(parent);
+        debug_assert!(
+            p.left == old_child || p.right == old_child,
+            "Node is not a child of its parent"
+        );
+
+        if p.left == old_child {
+            p.left = NIL_INDEX;
+        } else {
+            p.right = NIL_INDEX;
+        }
+    }
+
+    #[inline]
+    fn fix_parents_nil_child(&mut self) {
+        let p_index = self.node(NIL_INDEX).parent;
+        let p = self.node_mut(p_index);
+        debug_assert!(
+            p.left == NIL_INDEX || p.right == NIL_INDEX,
+            "Node is not a child of its parent"
+        );
+
+        if p.left == NIL_INDEX {
             p.left = EMPTY_REF;
         } else {
             p.right = EMPTY_REF;
