@@ -427,63 +427,58 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     pub(super) fn delete_index(&mut self, index: u32) {
-        let node = self.node(index);
-
-        let not_two_children = node.left == EMPTY_REF || node.right == EMPTY_REF;
-
         // Node has zero or one child
-        let delete_index= if not_two_children {
-            index
-        } else {
-            let successor_index = self.find_left_minimum(node.right);
-            let entity = self.node(successor_index).entity;
+        let mut delete_index= index;
+
+        let node = self.node(index);
+        let mut nd_left = node.left;
+        let mut nd_right = node.right;
+        let mut nd_parent = node.parent;
+        let mut nd_color = node.color;
+
+        // if two children replace node with it left minimum
+        if nd_left != EMPTY_REF && nd_right != EMPTY_REF {
+            let successor_index = self.find_left_minimum(nd_right);
+            let successor = self.node(successor_index);
+            let entity = successor.entity;
+            nd_parent = successor.parent;
+            nd_left = successor.left;
+            nd_right = successor.right;
+            nd_color = successor.color;
+
             self.node_mut(index).entity = entity;
 
-            successor_index
-        };
+            delete_index = successor_index;
+        }
 
-        self.delete_node_with_zero_or_one_child(delete_index);
-    }
-
-    #[inline]
-    fn delete_node_with_zero_or_one_child(&mut self, n_index: u32) {
-        self.store.put_back(n_index);
-        let node = self.node(n_index);
-        let nd_left = node.left;
-        let nd_right = node.right;
-        let nd_parent = node.parent;
-        let nd_color = node.color;
+        // only one child can be!
 
         if nd_left != EMPTY_REF {
-            // Node has ONLY a left child --> replace by its left child
-            self.replace_parents_child(nd_parent, n_index, nd_left);
+            self.replace_parents_child(nd_parent, delete_index, nd_left);
             self.fix_red_black_properties_after_delete(nd_left);
         } else if nd_right != EMPTY_REF {
-            // Node has ONLY a right child --> replace by its right child
-            self.replace_parents_child(nd_parent, n_index, nd_right);
+            self.replace_parents_child(nd_parent, delete_index, nd_right);
             self.fix_red_black_properties_after_delete(nd_right);
+        } else if nd_parent == EMPTY_REF {
+            self.root = EMPTY_REF;
         } else {
             // Node has no children -->
             // * node is red --> just remove it
             // * node is black --> replace it by a temporary NIL node (needed to fix the R-B rules)
-            if nd_parent != EMPTY_REF {
-                if nd_color == Color::Black {
-                    self.create_nil_node(nd_parent);
-                    self.set_nil_parents_child(nd_parent, n_index);
-                    self.fix_red_black_properties_after_delete(NIL_INDEX);
-                    self.fix_parents_nil_child()
-                } else {
-                    self.remove_parents_child(nd_parent, n_index);
-                }
+            if nd_color == Color::Black {
+                self.create_nil_node(nd_parent);
+                self.set_nil_parents_child(nd_parent, delete_index);
+                self.fix_red_black_properties_after_delete(NIL_INDEX);
+                self.fix_parents_nil_child();
             } else {
-                self.root = EMPTY_REF;
+                self.remove_parents_child(nd_parent, delete_index);
             }
         }
     }
 
     fn fix_red_black_properties_after_delete(&mut self, n_index: u32) {
         // Case 1: Examined node is root, end of recursion
-        if n_index == self.root || n_index == EMPTY_REF {
+        if n_index == self.root {
             // do not color root to black
             return;
         }
