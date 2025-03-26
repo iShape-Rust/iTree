@@ -639,6 +639,32 @@ mod tests {
     }
 
     #[test]
+    fn test_20() {
+        let mut list = KeyExpList::new(3);
+        let mut tree = KeyExpTree::new(8);
+
+        let k0 = Key::new(0, 10);
+        let k1 = Key::new(1, 10);
+        let k2 = Key::new(2, 10);
+
+        list.insert(k0, k0.key, 0);
+        list.insert(k1, k1.key, 0);
+        list.insert(k1, k1.key, 0);
+        list.insert(k1, k1.key, 0);
+        list.insert(k2, k2.key, 0);
+
+        tree.insert(k0, k0.key, 0);
+        tree.insert(k1, k1.key, 0);
+        tree.insert(k1, k1.key, 0);
+        tree.insert(k1, k1.key, 0);
+        tree.insert(k2, k2.key, 0);
+
+
+        assert_eq!(tree.into_ordered_vec(11), vec![0, 1, 1, 1, 2]);
+        assert_eq!(list.into_ordered_vec(11), vec![0, 1, 1, 1, 2]);
+    }
+
+    #[test]
     fn test_random_00() {
         let mut array = Vec::with_capacity(100);
         for n in 1..1000i32 {
