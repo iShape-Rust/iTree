@@ -660,8 +660,8 @@ mod tests {
         tree.insert(k2, k2.key, 0);
 
 
-        assert_eq!(tree.into_ordered_vec(11), vec![0, 1, 1, 1, 2]);
-        assert_eq!(list.into_ordered_vec(11), vec![0, 1, 1, 1, 2]);
+        assert_eq!(tree.into_ordered_vec(0), vec![0, 1, 1, 1, 2]);
+        assert_eq!(list.into_ordered_vec(0), vec![0, 1, 1, 1, 2]);
     }
 
     #[test]
