@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use rand::prelude::SliceRandom;
-    use rand::{Rng, rng};
     use std::cmp::Ordering;
     use i_tree::ExpiredKey;
     use i_tree::key::array::IntoArray;

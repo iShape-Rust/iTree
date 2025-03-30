@@ -1,6 +1,11 @@
 pub mod key;
+mod seg;
 
 pub trait ExpiredKey<E: Expiration>: Copy + Ord {
+    fn expiration(&self) -> E;
+}
+
+pub trait ExpiredVal<E: Expiration>: Copy {
     fn expiration(&self) -> E;
 }
 

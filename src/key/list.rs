@@ -77,6 +77,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
 
     #[inline]
     fn clear(&mut self) {
+        self.min_exp = E::max_expiration();
         self.buffer.clear();
     }
 }
