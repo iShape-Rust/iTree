@@ -183,6 +183,7 @@ where
             }
 
             self.i0 = self.find_next_not_empty_chunk();
+            self.i1 = 0;
         }
 
         None

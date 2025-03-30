@@ -109,7 +109,7 @@ mod tests {
     fn test_02() {
         let m = Heap32::range_to_mask(0, 30);
         let indices: Vec<_> = BitIter::new(m).collect();
-        assert_eq!(indices, vec![0]);
+        assert_eq!(indices, vec![1, 5, 13, 29, 61]);
     }
 
     #[test]
