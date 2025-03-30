@@ -122,7 +122,7 @@ impl Layout {
     #[inline]
     fn count(&self) -> usize {
         let order = self.index(self.max);
-        Heap32::order_to_heap_index(order) as usize
+        Heap32::order_to_heap_index(order) as usize + 1
     }
 }
 
