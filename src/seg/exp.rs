@@ -5,11 +5,17 @@ pub struct SegRange<R> {
 }
 
 pub trait SegExpCollection<R, E, V> {
-    fn insert(&mut self, range: SegRange<R>, val: V, time: E);
+
     type Iter<'a>: Iterator<Item = V>
     where
-    Self: 'a;
-    fn iter(&mut self, range: SegRange<R>, time: E) -> Self::Iter<'_>;
+        Self: 'a;
+
+    fn mask(&self, range: SegRange<R>) -> u64;
+    fn insert_by_mask(&mut self, mask: u64, val: V, time: E);
+    fn insert_by_range(&mut self, range: SegRange<R>, val: V, time: E);
+    fn iter_by_mask(&mut self, mask: u64, time: E) -> Self::Iter<'_>;
+    fn iter_by_range(&mut self, range: SegRange<R>, time: E) -> Self::Iter<'_>;
+
     fn clear(&mut self);
 }
 

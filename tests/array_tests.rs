@@ -7,18 +7,6 @@ mod tests {
     use i_tree::key::list::KeyExpList;
     use i_tree::key::tree::KeyExpTree;
 
-    struct Task {
-        time: i32,
-        val: i32,
-        exp: i32,
-    }
-
-    impl Task {
-        fn new(time: i32, val: i32, exp: i32) -> Self {
-            Self { time, val, exp }
-        }
-    }
-
     #[derive(Debug, Clone, Copy)]
     struct Key {
         key: i32,

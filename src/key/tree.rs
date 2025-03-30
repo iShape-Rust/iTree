@@ -148,20 +148,20 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         index
     }
 
-    #[inline]
-    pub(super) fn expire_parent(&mut self, n_index: u32, time: E) -> u32 {
-        let mut index = self.node(n_index).parent;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            if node.is_not_expired(time) {
-                return index;
-            }
-            self.delete_index(index);
-            index = self.node(n_index).parent;
-        }
-        index
-    }
+    // #[inline]
+    // pub(super) fn expire_parent(&mut self, n_index: u32, time: E) -> u32 {
+    //     let mut index = self.node(n_index).parent;
+    //
+    //     while index != EMPTY_REF {
+    //         let node = self.node(index);
+    //         if node.is_not_expired(time) {
+    //             return index;
+    //         }
+    //         self.delete_index(index);
+    //         index = self.node(n_index).parent;
+    //     }
+    //     index
+    // }
 
     #[inline]
     fn create_nil_node(&mut self, parent: u32) {

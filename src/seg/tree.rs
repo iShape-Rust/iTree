@@ -16,7 +16,7 @@ where
     i64: From<R>,
 {
     #[inline]
-    fn new(range: SegRange<R>) -> Option<Self> {
+    pub fn new(range: SegRange<R>) -> Option<Self> {
         let end: i64 = range.max.into();
         let start: i64 = range.min.into();
         let layout = Layout::new(start, end)?;
@@ -44,16 +44,27 @@ impl<R, E: Expiration, V: ExpiredVal<E>> SegExpCollection<R, E, V> for SegExpTre
 where
     i64: From<R>,
 {
+
     #[inline]
-    fn insert(&mut self, range: SegRange<R>, val: V, time: E) {
+    fn mask(&self, range: SegRange<R>) -> u64 {
         let start = self.layout.index(range.min.into());
         let end = self.layout.index(range.max.into());
 
-        let mask = Heap32::range_to_mask(start, end);
+        Heap32::range_to_mask(start, end)
+    }
+
+    #[inline]
+    fn insert_by_mask(&mut self, mask: u64, val: V, time: E) {
         let entity = Entity::new(val, mask);
         for index in BitIter::new(mask) {
             self.chunk_mut(index).insert(entity, time);
         }
+    }
+
+    #[inline]
+    fn insert_by_range(&mut self, range: SegRange<R>, val: V, time: E) {
+        let mask = self.mask(range);
+        self.insert_by_mask(mask, val, time);
     }
 
     type Iter<'a>
@@ -64,12 +75,13 @@ where
         V: 'a;
 
     #[inline]
-    fn iter(&mut self, range: SegRange<R>, time: E) -> SegExpTreeIterator<R, E, V> {
-        let start = self.layout.index(range.min.into());
-        let end = self.layout.index(range.max.into());
+    fn iter_by_mask(&mut self, mask: u64, time: E) -> SegExpTreeIterator<R, E, V> {
+        SegExpTreeIterator::new(mask, time, self)
+    }
 
-        let mask = Heap32::range_to_mask(start, end);
-
+    #[inline]
+    fn iter_by_range(&mut self, range: SegRange<R>, time: E) -> SegExpTreeIterator<R, E, V> {
+        let mask = self.mask(range);
         SegExpTreeIterator::new(mask, time, self)
     }
 
@@ -293,7 +305,7 @@ mod tests {
     fn test_02() {
         let mut tree = SegExpTree::new(SegRange { min: 0, max: 128 }).unwrap();
         let s = Segment::new(0, 2, 2, 100);
-        tree.insert(s.y_range(), s, 0);
+        tree.insert_by_range(s.y_range(), s, 0);
         tree.clear();
         for chunk in tree.chunks {
             assert!(chunk.is_empty());
@@ -304,9 +316,9 @@ mod tests {
     fn test_03() {
         let mut tree = SegExpTree::new(SegRange { min: 0, max: 128 }).unwrap();
         let s = Segment::new(0, 2, 2, 100);
-        tree.insert(s.y_range(), s, 0);
+        tree.insert_by_range(s.y_range(), s, 0);
         let mut result = Vec::new();
-        for val in tree.iter(SegRange { min: 0, max: 100 }, 0) {
+        for val in tree.iter_by_range(SegRange { min: 0, max: 100 }, 0) {
             result.push(val);
         }
         assert_eq!(result.len(), 1);
@@ -318,11 +330,11 @@ mod tests {
         let s0 = Segment::new(0, 10, 2, 100);
         let s1 = Segment::new(0, 20, 2, 80);
 
-        tree.insert(s0.y_range(), s0, 0);
-        tree.insert(s1.y_range(), s1, 0);
+        tree.insert_by_range(s0.y_range(), s0, 0);
+        tree.insert_by_range(s1.y_range(), s1, 0);
 
         let mut result = Vec::new();
-        for val in tree.iter(SegRange { min: 15, max: 90 }, 0) {
+        for val in tree.iter_by_range(SegRange { min: 15, max: 90 }, 0) {
             result.push(val);
         }
         assert_eq!(result.len(), 2);
@@ -334,11 +346,11 @@ mod tests {
         let s0 = Segment::new(0, 10, 2, 20);
         let s1 = Segment::new(0, 80, 2, 100);
 
-        tree.insert(s0.y_range(), s0, 0);
-        tree.insert(s1.y_range(), s1, 0);
+        tree.insert_by_range(s0.y_range(), s0, 0);
+        tree.insert_by_range(s1.y_range(), s1, 0);
 
         let mut result = Vec::new();
-        for val in tree.iter(SegRange { min: 40, max: 60 }, 0) {
+        for val in tree.iter_by_range(SegRange { min: 40, max: 60 }, 0) {
             result.push(val);
         }
         assert_eq!(result.len(), 0);
