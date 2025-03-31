@@ -3,7 +3,6 @@ use crate::{Expiration, ExpiredVal};
 
 #[derive(Clone)]
 pub(super) struct Chunk<E, V> {
-    min_exp: E,
     pub(super) buffer: Vec<Entity<E, V>>,
 }
 
@@ -11,7 +10,6 @@ impl<E: Expiration, V: ExpiredVal<E>> Chunk<E, V> {
     #[inline]
     pub(super) fn new() -> Self {
         Self {
-            min_exp: E::max_expiration(),
             buffer: vec![],
         }
     }
@@ -27,32 +25,32 @@ impl<E: Expiration, V: ExpiredVal<E>> Chunk<E, V> {
     }
 
     #[inline]
-    pub(super) fn insert(&mut self, entity: Entity<E, V>, time: E) {
-        self.clear_expired(time);
-        self.min_exp = self.min_exp.min(entity.val.expiration());
+    pub(super) fn insert(&mut self, entity: Entity<E, V>) {
+        // self.clear_expired(time);
+        // self.min_exp = self.min_exp.min(entity.val.expiration());
         self.buffer.push(entity);
     }
-
-    #[inline]
-    pub(super) fn clear_expired(&mut self, time: E) {
-        if self.min_exp >= time {
-            return;
-        }
-        let mut new_min_exp = E::max_expiration();
-        self.buffer.retain(|entity| {
-            let exp = entity.val.expiration();
-            let keep = exp > time;
-            if keep {
-                new_min_exp = new_min_exp.min(exp);
-            }
-            keep
-        });
-        self.min_exp = new_min_exp;
-    }
+    //
+    // #[inline]
+    // pub(super) fn clear_expired(&mut self, time: E) {
+    //     if self.min_exp >= time {
+    //         return;
+    //     }
+    //     let mut new_min_exp = E::max_expiration();
+    //     self.buffer.retain(|entity| {
+    //         let exp = entity.val.expiration();
+    //         let keep = exp > time;
+    //         if keep {
+    //             new_min_exp = new_min_exp.min(exp);
+    //         }
+    //         keep
+    //     });
+    //     self.min_exp = new_min_exp;
+    // }
 
     #[inline]
     pub(super) fn clear(&mut self) {
-        self.min_exp = E::max_expiration();
+        // self.min_exp = E::max_expiration();
         self.buffer.clear();
     }
 }

@@ -47,11 +47,11 @@ where
 {
 
     #[inline]
-    fn insert_by_range(&mut self, range: SegRange<R>, val: V, time: E) {
+    fn insert_by_range(&mut self, range: SegRange<R>, val: V) {
         let mask = self.layout.insert_mask(range.min.into(), range.max.into());
         let entity = Entity::new(val, mask);
         for index in BitIter::new(mask) {
-            self.chunk_mut(index).insert(entity, time);
+            self.chunk_mut(index).insert(entity);
         }
     }
 
@@ -109,9 +109,7 @@ where
     #[inline]
     fn find_next_not_empty_chunk(&mut self) -> usize {
         while let Some(next) = self.bit_iter.next() {
-            let chunk = self.tree.chunk_mut(next);
-            chunk.clear_expired(self.time);
-            if !chunk.is_empty() {
+            if !self.tree.chunk(next).is_empty() {
                 return next;
             }
         }
@@ -129,10 +127,16 @@ where
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         while self.i0 < self.tree.chunks.len() {
-            let chunk = self.tree.chunk(self.i0);
-            while self.i1 < chunk.buffer.len() {
-                let item = chunk.entity(self.i1);
-                self.i1 += 1;
+            let chunk = self.tree.chunk_mut(self.i0);
+            let mut i = self.i1;
+            while i < chunk.buffer.len() {
+                let item = chunk.entity(i);
+
+                if item.val.expiration() < self.time {
+                    chunk.buffer.swap_remove(i);
+                    continue
+                }
+                i += 1;
 
                 // we must return same pair only once,
                 let mask_int = item.mask & self.mask;
@@ -140,6 +144,7 @@ where
 
                 // we will return only for first index
                 if first_index == self.i0 {
+                    self.i1 = i;
                     return Some(item.val);
                 }
             }
@@ -203,7 +208,7 @@ mod tests {
     fn test_00() {
         let mut tree = SegExpTree::new(SegRange { min: 0, max: 128 }).unwrap();
         let s = Segment::new(0, 2, 2, 100);
-        tree.insert_by_range(s.y_range(), s, 0);
+        tree.insert_by_range(s.y_range(), s);
         tree.clear();
         for chunk in tree.chunks {
             assert!(chunk.is_empty());
@@ -214,7 +219,7 @@ mod tests {
     fn test_01() {
         let mut tree = SegExpTree::new(SegRange { min: 0, max: 128 }).unwrap();
         let s = Segment::new(0, 2, 2, 100);
-        tree.insert_by_range(s.y_range(), s, 0);
+        tree.insert_by_range(s.y_range(), s);
         let mut result = Vec::new();
         for val in tree.iter_by_range(SegRange { min: 0, max: 100 }, 0) {
             result.push(val);
@@ -228,8 +233,8 @@ mod tests {
         let s0 = Segment::new(0, 10, 2, 100);
         let s1 = Segment::new(0, 20, 2, 80);
 
-        tree.insert_by_range(s0.y_range(), s0, 0);
-        tree.insert_by_range(s1.y_range(), s1, 0);
+        tree.insert_by_range(s0.y_range(), s0);
+        tree.insert_by_range(s1.y_range(), s1);
 
         let mut result = Vec::new();
         for val in tree.iter_by_range(SegRange { min: 15, max: 90 }, 0) {
@@ -244,8 +249,8 @@ mod tests {
         let s0 = Segment::new(0, 10, 2, 20);
         let s1 = Segment::new(0, 80, 2, 100);
 
-        tree.insert_by_range(s0.y_range(), s0, 0);
-        tree.insert_by_range(s1.y_range(), s1, 0);
+        tree.insert_by_range(s0.y_range(), s0);
+        tree.insert_by_range(s1.y_range(), s1);
 
         let mut result = Vec::new();
         for val in tree.iter_by_range(SegRange { min: 40, max: 60 }, 0) {
@@ -265,7 +270,7 @@ mod tests {
 
         assert_ne!(m0 & m1, 0);
 
-        tree.insert_by_range(s0.y_range(), s0, 0);
+        tree.insert_by_range(s0.y_range(), s0);
 
         let mut result = Vec::new();
         for val in tree.iter_by_range(s1.y_range(), 0) {
