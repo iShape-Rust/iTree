@@ -10,10 +10,7 @@ pub trait SegExpCollection<R, E, V> {
     where
         Self: 'a;
 
-    fn mask(&self, range: SegRange<R>) -> u64;
-    fn insert_by_mask(&mut self, mask: u64, val: V, time: E);
     fn insert_by_range(&mut self, range: SegRange<R>, val: V, time: E);
-    fn iter_by_mask(&mut self, mask: u64, time: E) -> Self::Iter<'_>;
     fn iter_by_range(&mut self, range: SegRange<R>, time: E) -> Self::Iter<'_>;
 
     fn clear(&mut self);

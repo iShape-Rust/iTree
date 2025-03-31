@@ -35,7 +35,7 @@ impl<E: Expiration, V: ExpiredVal<E>> Chunk<E, V> {
 
     #[inline]
     pub(super) fn clear_expired(&mut self, time: E) {
-        if self.min_exp > time {
+        if self.min_exp >= time {
             return;
         }
         let mut new_min_exp = E::max_expiration();
