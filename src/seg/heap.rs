@@ -48,10 +48,7 @@ impl Heap32 {
 
         let mut m: u64 = 0;
         let mut shift = 32;
-        while w > 0 {
-            let wi = w;
-            w = 0;
-
+        for _ in 0..6 {
             let mut lt = shift - 1;
             shift >>= 1; // 16
 
@@ -59,8 +56,8 @@ impl Heap32 {
                 let rt = lt + 1;
                 let pt = lt >> 1;
 
-                let lt_bit = (wi >> lt) & 1;
-                let rt_bit = (wi >> rt) & 1;
+                let lt_bit = (w >> lt) & 1;
+                let rt_bit = (w >> rt) & 1;
                 let pt_bit = lt_bit & rt_bit;
 
                 w |= pt_bit << pt;
