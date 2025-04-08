@@ -132,7 +132,7 @@ impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
 
         while index != EMPTY_REF {
             let node = self.node(index);
-            match node.entity.key.cmp(&key) {
+            match key.cmp(&node.entity.key) {
                 Ordering::Equal => return Some(node.entity.val),
                 Ordering::Less => index = node.left,
                 Ordering::Greater => index = node.right,

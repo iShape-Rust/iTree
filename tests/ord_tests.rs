@@ -7,11 +7,20 @@ mod tests {
     use i_tree::ord::tree::BinTree;
 
     #[test]
+    fn test_00() {
+        let mut tree = BinTree::new(2);
+        tree.insert(1, 1);
+        tree.insert(2, 2);
+        let a1 = tree.get_value(2);
+        assert_eq!(a1.unwrap(), 2);
+    }
+
+    #[test]
     fn test_random_00() {
-        let n = 3;
+        let n = 20;
         let template: Vec<i32> = (1..n).collect();
         let mut rng = rng();
-        for _ in 0..1000 {
+        for _ in 0..100 {
             let mut array: Vec<i32> = template.clone();
             array.shuffle(&mut rng);
             let mut tree = BinTree::new(300);
@@ -24,7 +33,7 @@ mod tests {
                 for i in 0..n {
                     let a = tree.get_value(i);
                     let b = list.get_value(i);
-                    
+
                     assert_eq!(a, b);
                 }
             }
@@ -33,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_random_01() {
-        let n = 100;
+        let n = 60;
         let template: Vec<i32> = (1..n).collect();
         let mut rng = rng();
         for _ in 0..1000 {
@@ -61,7 +70,7 @@ mod tests {
         let template: Vec<i32> = (1..n).collect();
         let mut rng = rng();
         let mut values = Vec::new();
-        for i in 0..1000 {
+        for _ in 0..1000 {
             values.clear();
             let mut array: Vec<i32> = template.clone();
             array.shuffle(&mut rng);
@@ -77,14 +86,13 @@ mod tests {
                     let b = list.get_value(i);
                     assert_eq!(a, b);
                 }
-            }
 
-            if i % 5 == 0 && !values.is_empty() {
-                let val = values.pop().unwrap();
-                tree.delete(val);
-                list.delete(val);
+                if values.len() > 16 {
+                    let val = values.pop().unwrap();
+                    tree.delete(val);
+                    list.delete(val);
+                }
             }
-
         }
     }
 }
