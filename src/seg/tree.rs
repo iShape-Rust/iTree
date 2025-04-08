@@ -108,7 +108,7 @@ where
 
     #[inline]
     fn find_next_not_empty_chunk(&mut self) -> usize {
-        while let Some(next) = self.bit_iter.next() {
+        for next in &mut self.bit_iter {
             if !self.tree.chunk(next).is_empty() {
                 return next;
             }
@@ -118,7 +118,7 @@ where
 
 }
 
-impl<'a, R, E: Expiration, V: ExpiredVal<E>> Iterator for SegExpTreeIterator<'a, R, E, V>
+impl<R, E: Expiration, V: ExpiredVal<E>> Iterator for SegExpTreeIterator<'_, R, E, V>
 where
     i64: From<R>,
 {

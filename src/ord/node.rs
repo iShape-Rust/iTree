@@ -1,5 +1,4 @@
-use crate::key::entity::Entity;
-use crate::{Expiration, ExpiredKey};
+use crate::ord::entity::Entity;
 
 pub(super) const EMPTY_REF: u32 = u32::MAX;
 
@@ -10,22 +9,15 @@ pub(super) enum Color {
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct Node<K, E, V> {
+pub(super) struct Node<K, V> {
     pub(super) parent: u32,
     pub(super) left: u32,
     pub(super) right: u32,
     pub(super) color: Color,
-    pub(super) entity: Entity<K, E, V>,
+    pub(super) entity: Entity<K, V>,
 }
 
-impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Node<K, E, V> {
-    #[inline(always)]
-    pub(super) fn is_not_expired(&self, time: E) -> bool {
-        self.entity.key.expiration() > time
-    }
-}
-
-impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Default for Node<K, E, V> {
+impl<K: Copy, V: Copy> Default for Node<K, V> {
     #[inline]
     fn default() -> Self {
         Self {

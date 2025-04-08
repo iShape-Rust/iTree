@@ -1,13 +1,13 @@
-use crate::{Expiration, ExpiredKey};
-use crate::key::node::Node;
+use crate::ord::node::Node;
 
-pub(super) struct Pool<K, E, V> {
-    pub(super) buffer: Vec<Node<K, E, V>>,
+pub(super) struct Pool<K, V> {
+    pub(super) buffer: Vec<Node<K, V>>,
     pub(super) unused: Vec<u32>
 }
 
-impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
-    #[inline(always)]
+impl<K: Copy, V: Copy> Pool<K, V> {
+
+    #[inline]
     pub(super) fn new(capacity: usize) -> Self {
         let capacity = capacity.max(8);
         let mut store = Self {
@@ -29,7 +29,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
         self.unused.extend((n..n + l).rev());
     }
 
-    #[inline(always)]
+    #[inline]
     pub(super) fn get_free_index(&mut self) -> u32 {
         if self.unused.is_empty() {
             self.reserve(self.unused.capacity());
