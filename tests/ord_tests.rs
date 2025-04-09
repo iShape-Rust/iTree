@@ -12,7 +12,7 @@ mod tests {
         tree.insert(1, 1);
         tree.insert(2, 2);
         let a1 = tree.get_value(2);
-        assert_eq!(a1.unwrap(), 2);
+        assert_eq!(*a1.unwrap(), 2);
     }
 
     #[test]

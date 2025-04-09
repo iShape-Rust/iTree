@@ -8,7 +8,7 @@ pub(super) enum Color {
     Black,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) struct Node<K, V> {
     pub(super) parent: u32,
     pub(super) left: u32,
@@ -17,7 +17,7 @@ pub(super) struct Node<K, V> {
     pub(super) entity: Entity<K, V>,
 }
 
-impl<K: Copy, V: Copy> Default for Node<K, V> {
+impl<K: Copy, V> Default for Node<K, V> {
     #[inline]
     fn default() -> Self {
         Self {

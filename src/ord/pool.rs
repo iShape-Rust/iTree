@@ -5,7 +5,7 @@ pub(super) struct Pool<K, V> {
     pub(super) unused: Vec<u32>
 }
 
-impl<K: Copy, V: Copy> Pool<K, V> {
+impl<K: Copy, V: Clone> Pool<K, V> {
 
     #[inline]
     pub(super) fn new(capacity: usize) -> Self {

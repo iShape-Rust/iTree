@@ -11,7 +11,7 @@ pub struct BinTree<K, V> {
 
 const NIL_INDEX: u32 = 0;
 
-impl<K: Copy, V: Copy> BinTree<K, V> {
+impl<K: Copy, V: Clone> BinTree<K, V> {
     #[inline]
     pub fn new(capacity: usize) -> Self {
         let mut store = Pool::new(capacity);
@@ -23,7 +23,7 @@ impl<K: Copy, V: Copy> BinTree<K, V> {
         }
     }
 }
-impl<K: Copy + Ord, V: Copy> SortedCollection<K, V> for BinTree<K, V> {
+impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for BinTree<K, V> {
     #[inline]
     fn is_empty(&self) -> bool {
         self.root == EMPTY_REF
@@ -43,17 +43,17 @@ impl<K: Copy + Ord, V: Copy> SortedCollection<K, V> for BinTree<K, V> {
     }
 
     #[inline]
-    fn get_value(&self, key: K) -> Option<V> {
+    fn get_value(&self, key: K) -> Option<&V> {
         self.search_value(key)
     }
 
     #[inline]
-    fn first_less(&self, key: K) -> Option<V> {
+    fn first_less(&self, key: K) -> Option<&V> {
         self.search_first_less(key)
     }
 
     #[inline]
-    fn first_less_by<F>(&self, f: F) -> Option<V>
+    fn first_less_by<F>(&self, f: F) -> Option<&V>
     where
         F: Fn(K) -> Ordering
     {
@@ -89,7 +89,7 @@ impl<K: Copy + Ord, V: Copy> SortedCollection<K, V> for BinTree<K, V> {
     }
 }
 
-impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
+impl<K: Copy + Ord, V: Clone> BinTree<K, V> {
     #[inline(always)]
     fn is_black(&self, index: u32) -> bool {
         index == EMPTY_REF || self.node(index).color == Color::Black
@@ -127,13 +127,13 @@ impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
     }
 
     #[inline]
-    fn search_value(&self, key: K) -> Option<V> {
+    fn search_value(&self, key: K) -> Option<&V> {
         let mut index = self.root;
 
         while index != EMPTY_REF {
             let node = self.node(index);
             match key.cmp(&node.entity.key) {
-                Ordering::Equal => return Some(node.entity.val),
+                Ordering::Equal => return Some(&node.entity.val),
                 Ordering::Less => index = node.left,
                 Ordering::Greater => index = node.right,
             }
@@ -143,15 +143,15 @@ impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
     }
 
     #[inline]
-    fn search_first_less(&self, key: K) -> Option<V> {
+    fn search_first_less(&self, key: K) -> Option<&V> {
         let mut index = self.root;
         let mut result = None;
         while index != EMPTY_REF {
             let node = self.node(index);
             match node.entity.key.cmp(&key) {
-                Ordering::Equal => return Some(node.entity.val),
+                Ordering::Equal => return Some(&node.entity.val),
                 Ordering::Less => {
-                    result = Some(node.entity.val);
+                    result = Some(&node.entity.val);
                     index = node.right;
                 },
                 Ordering::Greater => index = node.left,
@@ -162,7 +162,7 @@ impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
     }
 
     #[inline]
-    fn search_first_less_by<F>(&self, f: F) -> Option<V>
+    fn search_first_less_by<F>(&self, f: F) -> Option<&V>
     where
         F: Fn(K) -> Ordering,
     {
@@ -171,9 +171,9 @@ impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
         while index != EMPTY_REF {
             let node = self.node(index);
             match f(node.entity.key) {
-                Ordering::Equal => return Some(node.entity.val),
+                Ordering::Equal => return Some(&node.entity.val),
                 Ordering::Less => {
-                    result = Some(node.entity.val);
+                    result = Some(&node.entity.val);
                     index = node.right;
                 },
                 Ordering::Greater => index = node.left,
@@ -414,7 +414,7 @@ impl<K: Copy + Ord, V: Copy> BinTree<K, V> {
         if nd_left != EMPTY_REF && nd_right != EMPTY_REF {
             let successor_index = self.find_left_minimum(nd_right);
             let successor = self.node(successor_index);
-            let entity = successor.entity;
+            let entity = successor.entity.clone();
             nd_parent = successor.parent;
             nd_left = successor.left;
             nd_right = successor.right;
