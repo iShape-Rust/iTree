@@ -1,12 +1,13 @@
 use std::cmp::Ordering;
-use crate::ord::entity::Entity;
-use crate::ord::sort::SortedCollection;
+use crate::EMPTY_REF;
+use crate::map::entity::Entity;
+use crate::map::sort::MapCollection;
 
-pub struct SortedList<K, V> {
+pub struct MapList<K, V> {
     pub(super) buffer: Vec<Entity<K, V>>,
 }
 
-impl<K: Copy, V: Clone> SortedList<K, V> {
+impl<K: Copy, V: Clone> MapList<K, V> {
     #[inline(always)]
     pub fn new(capacity: usize) -> Self {
         Self {
@@ -15,7 +16,7 @@ impl<K: Copy, V: Clone> SortedList<K, V> {
     }
 }
 
-impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for SortedList<K, V> {
+impl<K: Copy + Ord, V: Clone> MapCollection<K, V> for MapList<K, V> {
     #[inline]
     fn is_empty(&self) -> bool {
         self.buffer.is_empty()
@@ -38,6 +39,11 @@ impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for SortedList<K, V> {
     }
 
     #[inline]
+    fn delete_by_index(&mut self, index: u32) {
+        self.buffer.remove(index as usize);
+    }
+
+    #[inline]
     fn get_value(&self, key: K) -> Option<&V> {
         if let Ok(index) = self.buffer.binary_search_by_key(&key, |e| e.key) {
             Some(&unsafe { self.buffer.get_unchecked(index) }.val)
@@ -46,30 +52,42 @@ impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for SortedList<K, V> {
         }
     }
 
-    fn first_less(&self, key: K) -> Option<&V> {
+    #[inline]
+    fn value_by_index(&self, index: u32) -> &V {
+        &unsafe { self.buffer.get_unchecked(index as usize) }.val
+    }
+
+    #[inline]
+    fn value_by_index_mut(&mut self, index: u32) -> &mut V {
+        &mut unsafe { self.buffer.get_unchecked_mut(index as usize) }.val
+    }
+
+    #[inline]
+    fn first_index_less(&self, key: K) -> u32 {
         match self.buffer.binary_search_by(|e| e.key.cmp(&key)) {
-            Ok(index) => Some(&unsafe { self.buffer.get_unchecked(index) }.val),
+            Ok(index) => index as u32,
             Err(index) => {
                 if index > 0 {
-                    Some(&unsafe { self.buffer.get_unchecked(index - 1) }.val)
+                    (index - 1) as u32
                 } else {
-                    None
+                    EMPTY_REF
                 }
             }
         }
     }
 
-    fn first_less_by<F>(&self, f: F) -> Option<&V>
+    #[inline]
+    fn first_index_less_by<F>(&self, f: F) -> u32
     where
         F: Fn(K) -> Ordering,
     {
         match self.buffer.binary_search_by(|e| f(e.key)) {
-            Ok(index) => Some(&unsafe { self.buffer.get_unchecked(index) }.val),
+            Ok(index) => index as u32,
             Err(index) => {
                 if index > 0 {
-                    Some(&unsafe { self.buffer.get_unchecked(index - 1) }.val)
+                    (index - 1) as u32
                 } else {
-                    None
+                    EMPTY_REF
                 }
             }
         }

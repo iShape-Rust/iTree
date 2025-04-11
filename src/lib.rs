@@ -1,7 +1,9 @@
-pub mod ord;
+pub mod map;
 pub mod key;
 pub mod seg;
+pub mod set;
 
+pub const EMPTY_REF: u32 = u32::MAX;
 
 pub trait ExpiredKey<E: Expiration>: Copy + Ord {
     fn expiration(&self) -> E;

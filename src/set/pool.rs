@@ -1,11 +1,11 @@
-use crate::ord::node::Node;
+use crate::set::node::Node;
 
-pub(super) struct Pool<K, V> {
-    pub(super) buffer: Vec<Node<K, V>>,
+pub(super) struct Pool<V> {
+    pub(super) buffer: Vec<Node<V>>,
     pub(super) unused: Vec<u32>
 }
 
-impl<K: Copy, V: Clone> Pool<K, V> {
+impl<V: Clone + Default> Pool<V> {
 
     #[inline]
     pub(super) fn new(capacity: usize) -> Self {
@@ -36,8 +36,9 @@ impl<K: Copy, V: Clone> Pool<K, V> {
         }
         self.unused.pop().unwrap()
     }
+}
 
-
+impl<V> Pool<V> {
     #[inline(always)]
     pub(super) fn put_back(&mut self, index: u32) {
         self.unused.push(index)

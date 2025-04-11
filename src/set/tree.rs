@@ -1,20 +1,19 @@
-use crate::key::exp::KeyExpCollection;
-use crate::key::node::{Color, Node};
-use crate::key::pool::Pool;
-use crate::{Expiration, ExpiredKey, EMPTY_REF};
 use std::cmp::Ordering;
 use std::marker::PhantomData;
-use crate::key::entity::Entity;
+use crate::EMPTY_REF;
+use crate::set::node::{Color, Node};
+use crate::set::pool::Pool;
+use crate::set::sort::{KeyValue, SetCollection};
 
-pub struct KeyExpTree<K, E, V> {
-    pub(super) store: Pool<K, E, V>,
+pub struct SetTree<K, V> {
+    pub(super) store: Pool<V>,
     pub(super) root: u32,
-    phantom_data: PhantomData<E>
+    phantom_data: PhantomData<K>
 }
 
 const NIL_INDEX: u32 = 0;
 
-impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
+impl<K, V: Clone + Default> SetTree<K, V> {
     #[inline]
     pub fn new(capacity: usize) -> Self {
         let mut store = Pool::new(capacity);
@@ -27,35 +26,76 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         }
     }
 }
-
-impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for KeyExpTree<K, E, V> {
-    #[inline(always)]
+impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K, V> {
+    #[inline]
     fn is_empty(&self) -> bool {
         self.root == EMPTY_REF
     }
 
-    #[inline(always)]
-    fn insert(&mut self, key: K, val: V, time: E) {
-        debug_assert!(key.expiration() >= time, "The value is already expired");
-        self.insert_entity(Entity::new(key, val), time);
-    }
-
-    #[inline(always)]
-    fn get_value(&mut self, time: E, key: K) -> Option<V> {
-        self.search_value(time, key)
+    #[inline]
+    fn insert(&mut self, val: V) {
+        self.insert_value(val);
     }
 
     #[inline]
-    fn first_less(&mut self, time: E, default: V, key: K) -> V {
-        self.search_first_less(time, default, key)
+    fn delete(&mut self, key: &K) {
+        let index = self.find_index(key);
+        if index != EMPTY_REF {
+            self.delete_index(index);
+        }
     }
 
     #[inline]
-    fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    fn delete_by_index(&mut self, index: u32) {
+        self.delete_index(index);
+    }
+
+    #[inline]
+    fn get_value(&self, key: &K) -> Option<&V> {
+        self.search_value(key)
+    }
+
+    #[inline]
+    fn index_after(&self, index: u32) -> u32 {
+        let node = self.node(index);
+        if node.right != EMPTY_REF {
+            self.find_left_minimum(node.right)
+        } else {
+            node.parent
+        }
+    }
+
+    #[inline]
+    fn index_before(&self, index: u32) -> u32 {
+        let node = self.node(index);
+        if node.left != EMPTY_REF {
+            self.find_right_minimum(node.left)
+        } else {
+            node.parent
+        }
+    }
+
+    #[inline]
+    fn value_by_index(&self, index: u32) -> &V {
+        &self.node(index).value
+    }
+
+    #[inline]
+    fn value_by_index_mut(&mut self, index: u32) -> &mut V {
+        &mut self.node_mut(index).value
+    }
+
+    #[inline]
+    fn first_index_less(&self, key: &K) -> u32 {
+        self.search_first_less(key)
+    }
+
+    #[inline]
+    fn first_index_less_by<F>(&self, f: F) -> u32
     where
-        F: Fn(K) -> Ordering
+        F: Fn(&K) -> Ordering
     {
-        self.search_first_less_by(time, default, f)
+        self.search_first_less_by(f)
     }
 
     fn clear(&mut self) {
@@ -87,81 +127,21 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
     }
 }
 
-impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
+impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
     #[inline(always)]
     fn is_black(&self, index: u32) -> bool {
         index == EMPTY_REF || self.node(index).color == Color::Black
     }
 
     #[inline(always)]
-    pub(super) fn node(&self, index: u32) -> &Node<K, E, V> {
+    pub(super) fn node(&self, index: u32) -> &Node<V> {
         unsafe { self.store.buffer.get_unchecked(index as usize) }
     }
 
     #[inline(always)]
-    pub(super) fn node_mut(&mut self, index: u32) -> &mut Node<K, E, V> {
+    pub(super) fn node_mut(&mut self, index: u32) -> &mut Node<V> {
         unsafe { self.store.buffer.get_unchecked_mut(index as usize) }
     }
-
-    #[inline]
-    pub(super) fn expire_root(&mut self, time: E) -> u32 {
-        let mut index = self.root;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            if node.is_not_expired(time) {
-                return index;
-            }
-            self.delete_index(index);
-            index = self.root;
-        }
-        index
-    }
-
-    #[inline]
-    pub(super) fn expire_left(&mut self, n_index: u32, time: E) -> u32 {
-        let mut index = self.node(n_index).left;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            if node.is_not_expired(time) {
-                return index;
-            }
-            self.delete_index(index);
-            index = self.node(n_index).left;
-        }
-        index
-    }
-
-    #[inline]
-    pub(super) fn expire_right(&mut self, n_index: u32, time: E) -> u32 {
-        let mut index = self.node(n_index).right;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            if node.is_not_expired(time) {
-                return index;
-            }
-            self.delete_index(index);
-            index = self.node(n_index).right;
-        }
-        index
-    }
-
-    // #[inline]
-    // pub(super) fn expire_parent(&mut self, n_index: u32, time: E) -> u32 {
-    //     let mut index = self.node(n_index).parent;
-    //
-    //     while index != EMPTY_REF {
-    //         let node = self.node(index);
-    //         if node.is_not_expired(time) {
-    //             return index;
-    //         }
-    //         self.delete_index(index);
-    //         index = self.node(n_index).parent;
-    //     }
-    //     index
-    // }
 
     #[inline]
     fn create_nil_node(&mut self, parent: u32) {
@@ -173,27 +153,27 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn insert_root(&mut self, entity: Entity<K, E, V>) {
+    fn insert_root(&mut self, value: V) {
         let new_index = self.store.get_free_index();
         let new_node = self.node_mut(new_index);
         new_node.parent = EMPTY_REF;
         new_node.left = EMPTY_REF;
         new_node.right = EMPTY_REF;
         new_node.color = Color::Black;
-        new_node.entity = entity;
+        new_node.value = value;
         self.root = new_index;
     }
 
     #[inline]
-    fn search_value(&mut self, time: E, key: K) -> Option<V> {
-        let mut index = self.expire_root(time);
+    fn search_value(&self, key: &K) -> Option<&V> {
+        let mut index = self.root;
 
         while index != EMPTY_REF {
-            let entity = self.node(index).entity;
-            match entity.key.cmp(&key) {
-                Ordering::Equal => return Some(entity.val),
-                Ordering::Less => index = self.expire_left(index, time),
-                Ordering::Greater => index = self.expire_right(index, time),
+            let node = self.node(index);
+            match key.cmp(&node.value.key()) {
+                Ordering::Equal => return Some(&node.value),
+                Ordering::Less => index = node.left,
+                Ordering::Greater => index = node.right,
             }
         }
 
@@ -201,18 +181,18 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn search_first_less(&mut self, time: E, default: V, key: K) -> V {
-        let mut index = self.expire_root(time);
-        let mut result = default;
+    fn search_first_less(&self, key: &K) -> u32 {
+        let mut index = self.root;
+        let mut result = EMPTY_REF;
         while index != EMPTY_REF {
-            let entity = self.node(index).entity;
-            match entity.key.cmp(&key) {
-                Ordering::Equal => return entity.val,
+            let node = self.node(index);
+            match node.value.key().cmp(key) {
+                Ordering::Equal => return index,
                 Ordering::Less => {
-                    result = entity.val;
-                    index = self.expire_right(index, time);
+                    result = index;
+                    index = node.right;
                 },
-                Ordering::Greater => index = self.expire_left(index, time),
+                Ordering::Greater => index = node.left,
             }
         }
 
@@ -220,21 +200,21 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn search_first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    fn search_first_less_by<F>(&self, f: F) -> u32
     where
-        F: Fn(K) -> Ordering,
+        F: Fn(&K) -> Ordering,
     {
-        let mut index = self.expire_root(time);
-        let mut result = default;
+        let mut index = self.root;
+        let mut result = EMPTY_REF;
         while index != EMPTY_REF {
-            let entity = self.node(index).entity;
-            match f(entity.key) {
-                Ordering::Equal => return entity.val,
+            let node = self.node(index);
+            match f(node.value.key()) {
+                Ordering::Equal => return index,
                 Ordering::Less => {
-                    result = entity.val;
-                    index = self.expire_right(index, time);
+                    result = index;
+                    index = node.right;
                 },
-                Ordering::Greater => index = self.expire_left(index, time),
+                Ordering::Greater => index = node.left,
             }
         }
 
@@ -242,27 +222,44 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn insert_entity(&mut self, entity: Entity<K, E, V>, time: E) {
-        let mut index = self.expire_root(time);
+    fn find_index(&self, key: &K) -> u32 {
+        let mut index = self.root;
+
+        while index != EMPTY_REF {
+            let node = self.node(index);
+            match key.cmp(&node.value.key()) {
+                Ordering::Equal => return index,
+                Ordering::Less => index = node.left,
+                Ordering::Greater => index = node.right
+            }
+        }
+
+        EMPTY_REF
+    }
+
+    #[inline]
+    fn insert_value(&mut self, value: V) {
+        let mut index = self.root;
         if index == EMPTY_REF {
-            self.insert_root(entity);
+            self.insert_root(value);
             return;
         }
 
-        let key = entity.key;
+        let key = value.key();
 
         loop {
             let p_index = index;
-            if key < self.node(index).entity.key {
-                index = self.expire_left(index, time);
+            let node = self.node(index);
+            if key < node.value.key() {
+                index = node.left;
                 if index == EMPTY_REF {
-                    self.insert_as_left(entity, p_index);
+                    self.insert_as_left(value, p_index);
                     return;
                 }
             } else {
-                index = self.expire_right(index, time);
+                index = node.right;
                 if index == EMPTY_REF {
-                    self.insert_as_right(entity, p_index);
+                    self.insert_as_right(value, p_index);
                     return;
                 }
             }
@@ -270,21 +267,21 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn insert_new(&mut self, entity: Entity<K, E, V>, p_index: u32) -> u32 {
+    fn insert_new(&mut self, value: V, p_index: u32) -> u32 {
         let new_index = self.store.get_free_index();
         let new_node = self.node_mut(new_index);
         new_node.parent = p_index;
         new_node.left = EMPTY_REF;
         new_node.right = EMPTY_REF;
         new_node.color = Color::Red;
-        new_node.entity = entity;
+        new_node.value = value;
 
         new_index
     }
 
     #[inline]
-    fn insert_as_left(&mut self, entity: Entity<K, E, V>, p_index: u32) {
-        let new_index = self.insert_new(entity, p_index);
+    fn insert_as_left(&mut self, value: V, p_index: u32) {
+        let new_index = self.insert_new(value, p_index);
 
         let parent = self.node_mut(p_index);
         parent.left = new_index;
@@ -295,8 +292,8 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn insert_as_right(&mut self, entity: Entity<K, E, V>, p_index: u32) {
-        let new_index = self.insert_new(entity, p_index);
+    fn insert_as_right(&mut self, value: V, p_index: u32) {
+        let new_index = self.insert_new(value, p_index);
 
         let parent = self.node_mut(p_index);
         parent.right = new_index;
@@ -305,7 +302,6 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
             self.fix_red_black_properties_after_insert(new_index, p_index);
         }
     }
-
 
     fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
         // parent is red!
@@ -441,6 +437,14 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         i
     }
 
+    #[inline]
+    fn find_right_minimum(&self, mut i: u32) -> u32 {
+        while self.node(i).right != EMPTY_REF {
+            i = self.node(i).right;
+        }
+        i
+    }
+
     pub(super) fn delete_index(&mut self, index: u32) {
         // Node has zero or one child
         let mut delete_index= index;
@@ -455,13 +459,13 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         if nd_left != EMPTY_REF && nd_right != EMPTY_REF {
             let successor_index = self.find_left_minimum(nd_right);
             let successor = self.node(successor_index);
-            let entity = successor.entity;
+            let value = successor.value.clone();
             nd_parent = successor.parent;
             nd_left = successor.left;
             nd_right = successor.right;
             nd_color = successor.color;
 
-            self.node_mut(index).entity = entity;
+            self.node_mut(index).value = value;
 
             delete_index = successor_index;
         }

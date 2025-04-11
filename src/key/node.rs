@@ -1,8 +1,6 @@
 use crate::key::entity::Entity;
 use crate::{Expiration, ExpiredKey};
 
-pub(super) const EMPTY_REF: u32 = u32::MAX;
-
 #[derive(PartialEq, Clone, Copy)]
 pub(super) enum Color {
     Red,

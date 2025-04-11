@@ -1,6 +1,6 @@
-use crate::{Expiration, ExpiredKey};
+use crate::{Expiration, ExpiredKey, EMPTY_REF};
 use crate::key::list::KeyExpList;
-use crate::key::node::{Color, Node, EMPTY_REF};
+use crate::key::node::{Color, Node};
 use crate::key::tree::KeyExpTree;
 
 pub trait IntoArray<E, V> {

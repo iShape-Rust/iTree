@@ -1,7 +1,3 @@
-use crate::ord::entity::Entity;
-
-pub(super) const EMPTY_REF: u32 = u32::MAX;
-
 #[derive(PartialEq, Clone, Copy)]
 pub(super) enum Color {
     Red,
@@ -9,15 +5,15 @@ pub(super) enum Color {
 }
 
 #[derive(Clone)]
-pub(super) struct Node<K, V> {
+pub(super) struct Node<V> {
     pub(super) parent: u32,
     pub(super) left: u32,
     pub(super) right: u32,
     pub(super) color: Color,
-    pub(super) entity: Entity<K, V>,
+    pub(super) value: V,
 }
 
-impl<K: Copy, V> Default for Node<K, V> {
+impl<V: Clone + Default> Default for Node<V> {
     #[inline]
     fn default() -> Self {
         Self {
@@ -25,7 +21,7 @@ impl<K: Copy, V> Default for Node<K, V> {
             left: 0,
             right: 0,
             color: Color::Red,
-            entity: unsafe { std::mem::zeroed() },
+            value: V::default(),
         }
     }
 }

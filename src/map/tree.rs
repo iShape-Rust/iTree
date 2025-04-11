@@ -1,17 +1,18 @@
 use std::cmp::Ordering;
-use crate::ord::entity::Entity;
-use crate::ord::node::{Color, Node, EMPTY_REF};
-use crate::ord::sort::SortedCollection;
-use crate::ord::pool::Pool;
+use crate::EMPTY_REF;
+use crate::map::entity::Entity;
+use crate::map::node::{Color, Node};
+use crate::map::sort::MapCollection;
+use crate::map::pool::Pool;
 
-pub struct BinTree<K, V> {
+pub struct MapTree<K, V> {
     pub(super) store: Pool<K, V>,
     pub(super) root: u32
 }
 
 const NIL_INDEX: u32 = 0;
 
-impl<K: Copy, V: Clone> BinTree<K, V> {
+impl<K: Copy + Default, V: Clone + Default> MapTree<K, V> {
     #[inline]
     pub fn new(capacity: usize) -> Self {
         let mut store = Pool::new(capacity);
@@ -23,7 +24,7 @@ impl<K: Copy, V: Clone> BinTree<K, V> {
         }
     }
 }
-impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for BinTree<K, V> {
+impl<K: Copy + Ord + Default, V: Clone + Default> MapCollection<K, V> for MapTree<K, V> {
     #[inline]
     fn is_empty(&self) -> bool {
         self.root == EMPTY_REF
@@ -43,17 +44,32 @@ impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for BinTree<K, V> {
     }
 
     #[inline]
+    fn delete_by_index(&mut self, index: u32) {
+        self.delete_index(index);
+    }
+
+    #[inline]
     fn get_value(&self, key: K) -> Option<&V> {
         self.search_value(key)
     }
 
     #[inline]
-    fn first_less(&self, key: K) -> Option<&V> {
+    fn value_by_index(&self, index: u32) -> &V {
+        &self.node(index).entity.val
+    }
+
+    #[inline]
+    fn value_by_index_mut(&mut self, index: u32) -> &mut V {
+        &mut self.node_mut(index).entity.val
+    }
+
+    #[inline]
+    fn first_index_less(&self, key: K) -> u32 {
         self.search_first_less(key)
     }
 
     #[inline]
-    fn first_less_by<F>(&self, f: F) -> Option<&V>
+    fn first_index_less_by<F>(&self, f: F) -> u32
     where
         F: Fn(K) -> Ordering
     {
@@ -89,7 +105,7 @@ impl<K: Copy + Ord, V: Clone> SortedCollection<K, V> for BinTree<K, V> {
     }
 }
 
-impl<K: Copy + Ord, V: Clone> BinTree<K, V> {
+impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
     #[inline(always)]
     fn is_black(&self, index: u32) -> bool {
         index == EMPTY_REF || self.node(index).color == Color::Black
@@ -143,15 +159,15 @@ impl<K: Copy + Ord, V: Clone> BinTree<K, V> {
     }
 
     #[inline]
-    fn search_first_less(&self, key: K) -> Option<&V> {
+    fn search_first_less(&self, key: K) -> u32 {
         let mut index = self.root;
-        let mut result = None;
+        let mut result = EMPTY_REF;
         while index != EMPTY_REF {
             let node = self.node(index);
             match node.entity.key.cmp(&key) {
-                Ordering::Equal => return Some(&node.entity.val),
+                Ordering::Equal => return index,
                 Ordering::Less => {
-                    result = Some(&node.entity.val);
+                    result = index;
                     index = node.right;
                 },
                 Ordering::Greater => index = node.left,
@@ -162,18 +178,18 @@ impl<K: Copy + Ord, V: Clone> BinTree<K, V> {
     }
 
     #[inline]
-    fn search_first_less_by<F>(&self, f: F) -> Option<&V>
+    fn search_first_less_by<F>(&self, f: F) -> u32
     where
         F: Fn(K) -> Ordering,
     {
         let mut index = self.root;
-        let mut result = None;
+        let mut result = EMPTY_REF;
         while index != EMPTY_REF {
             let node = self.node(index);
             match f(node.entity.key) {
-                Ordering::Equal => return Some(&node.entity.val),
+                Ordering::Equal => return index,
                 Ordering::Less => {
-                    result = Some(&node.entity.val);
+                    result = index;
                     index = node.right;
                 },
                 Ordering::Greater => index = node.left,

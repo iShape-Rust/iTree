@@ -2,16 +2,16 @@
 mod tests {
     use rand::prelude::SliceRandom;
     use rand::rng;
-    use i_tree::ord::list::SortedList;
-    use i_tree::ord::sort::SortedCollection;
-    use i_tree::ord::tree::BinTree;
+    use i_tree::set::list::SetList;
+    use i_tree::set::sort::SetCollection;
+    use i_tree::set::tree::SetTree;
 
     #[test]
     fn test_00() {
-        let mut tree = BinTree::new(2);
-        tree.insert(1, 1);
-        tree.insert(2, 2);
-        let a1 = tree.get_value(2);
+        let mut tree = SetTree::new(2);
+        tree.insert(1);
+        tree.insert(2);
+        let a1 = tree.get_value(&2);
         assert_eq!(*a1.unwrap(), 2);
     }
 
@@ -23,16 +23,16 @@ mod tests {
         for _ in 0..100 {
             let mut array: Vec<i32> = template.clone();
             array.shuffle(&mut rng);
-            let mut tree = BinTree::new(300);
-            let mut list = SortedList::new(array.len());
+            let mut tree = SetTree::new(300);
+            let mut list = SetList::new(array.len());
 
             while let Some(val) = array.pop() {
-                tree.insert(val, val);
-                list.insert(val, val);
+                tree.insert(val);
+                list.insert(val);
 
                 for i in 0..n {
-                    let a = tree.get_value(i);
-                    let b = list.get_value(i);
+                    let a = tree.get_value(&i);
+                    let b = list.get_value(&i);
 
                     assert_eq!(a, b);
                 }
@@ -48,16 +48,16 @@ mod tests {
         for _ in 0..1000 {
             let mut array: Vec<i32> = template.clone();
             array.shuffle(&mut rng);
-            let mut tree = BinTree::new(300);
-            let mut list = SortedList::new(array.len());
+            let mut tree = SetTree::new(300);
+            let mut list = SetList::new(array.len());
 
             while let Some(val) = array.pop() {
-                tree.insert(val, val);
-                list.insert(val, val);
+                tree.insert(val);
+                list.insert(val);
 
                 for i in 0..n {
-                    let a = tree.get_value(i);
-                    let b = list.get_value(i);
+                    let a = tree.get_value(&i);
+                    let b = list.get_value(&i);
                     assert_eq!(a, b);
                 }
             }
@@ -74,23 +74,23 @@ mod tests {
             values.clear();
             let mut array: Vec<i32> = template.clone();
             array.shuffle(&mut rng);
-            let mut tree = BinTree::new(array.len());
-            let mut list = SortedList::new(array.len());
+            let mut tree = SetTree::new(array.len());
+            let mut list = SetList::new(array.len());
 
             while let Some(val) = array.pop() {
-                tree.insert(val, val);
-                list.insert(val, val);
+                tree.insert(val);
+                list.insert(val);
                 values.push(val);
                 for i in 0..n {
-                    let a = tree.get_value(i);
-                    let b = list.get_value(i);
+                    let a = tree.get_value(&i);
+                    let b = list.get_value(&i);
                     assert_eq!(a, b);
                 }
 
                 if values.len() > 16 {
                     let val = values.pop().unwrap();
-                    tree.delete(val);
-                    list.delete(val);
+                    tree.delete(&val);
+                    list.delete(&val);
                 }
             }
         }
