@@ -56,22 +56,38 @@ impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K
     }
 
     #[inline]
-    fn index_after(&self, index: u32) -> u32 {
+    fn index_after(&self, mut index: u32) -> u32 {
         let node = self.node(index);
         if node.right != EMPTY_REF {
             self.find_left_minimum(node.right)
         } else {
-            node.parent
+            // find first parent where we not right
+            let mut parent_index = node.parent;
+            let mut parent = self.node(parent_index);
+            while parent.right == index {
+                index = parent_index;
+                parent_index = parent.parent;
+                parent = self.node(parent_index);
+            }
+            parent_index
         }
     }
 
     #[inline]
-    fn index_before(&self, index: u32) -> u32 {
+    fn index_before(&self, mut index: u32) -> u32 {
         let node = self.node(index);
         if node.left != EMPTY_REF {
             self.find_right_minimum(node.left)
         } else {
-            node.parent
+            // find first parent where we not left
+            let mut parent_index = node.parent;
+            let mut parent = self.node(parent_index);
+            while parent.left == index {
+                index = parent_index;
+                parent_index = parent.parent;
+                parent = self.node(parent_index);
+            }
+            parent_index
         }
     }
 
