@@ -464,6 +464,8 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
                 self.remove_parents_child(nd_parent, delete_index);
             }
         }
+
+        self.store.put_back(delete_index);
     }
 
     fn fix_red_black_properties_after_delete(&mut self, n_index: u32) {
