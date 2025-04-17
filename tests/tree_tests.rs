@@ -134,12 +134,12 @@ mod tests {
         list.insert(k0, 1, 0);
         tree.insert(k0, 1, 0);
 
-        let t0 = tree.first_less_by(0, -1, |key| key.key.cmp(&1));
-        let l0 = list.first_less_by(0, -1, |key| key.key.cmp(&1));
-        let t1 = tree.first_less_by(0, -1, |key| key.key.cmp(&2));
-        let l1 = list.first_less_by(0, -1, |key| key.key.cmp(&2));
-        let t2 = tree.first_less_by(0, -1, |key| key.key.cmp(&3));
-        let l2 = list.first_less_by(0, -1, |key| key.key.cmp(&3));
+        let t0 = tree.first_less_or_equal_by(0, -1, |key| key.key.cmp(&1));
+        let l0 = list.first_less_or_equal_by(0, -1, |key| key.key.cmp(&1));
+        let t1 = tree.first_less_or_equal_by(0, -1, |key| key.key.cmp(&2));
+        let l1 = list.first_less_or_equal_by(0, -1, |key| key.key.cmp(&2));
+        let t2 = tree.first_less_or_equal_by(0, -1, |key| key.key.cmp(&3));
+        let l2 = list.first_less_or_equal_by(0, -1, |key| key.key.cmp(&3));
 
         assert_eq!(t0, -1);
         assert_eq!(l0, -1);
@@ -182,8 +182,8 @@ mod tests {
         }
 
         for i in 0..10 {
-            let l = list.first_less_by(1, -1, |k| k.key.cmp(&i));
-            let t = tree.first_less_by(1, -1, |k| k.key.cmp(&i));
+            let l = list.first_less_or_equal_by(1, -1, |k| k.key.cmp(&i));
+            let t = tree.first_less_or_equal_by(1, -1, |k| k.key.cmp(&i));
             assert_eq!(l, t);
         }
     }
@@ -426,15 +426,15 @@ mod tests {
             list.insert(key, key.key, 0);
         }
 
-        let l0 = list.first_less_by(3, -1, |k| k.key.cmp(&2));
-        let t0 = tree.first_less_by(3, -1, |k| k.key.cmp(&2));
+        let l0 = list.first_less_or_equal_by(3, -1, |k| k.key.cmp(&2));
+        let t0 = tree.first_less_or_equal_by(3, -1, |k| k.key.cmp(&2));
         assert_eq!(l0, t0);
 
         tree.insert(Key::new(1, 5), 1, 3);
         list.insert(Key::new(1, 5), 1, 3);
 
-        let l1 = list.first_less_by(4, -1, |k| k.key.cmp(&2));
-        let t1 = tree.first_less_by(4, -1, |k| k.key.cmp(&2));
+        let l1 = list.first_less_or_equal_by(4, -1, |k| k.key.cmp(&2));
+        let t1 = tree.first_less_or_equal_by(4, -1, |k| k.key.cmp(&2));
         assert_eq!(l1, t1);
     }
 
@@ -450,19 +450,19 @@ mod tests {
             list.insert(key, key.key, 0);
         }
 
-        let l0 = list.first_less_by(1, -1, |k| k.key.cmp(&4));
-        let t0 = tree.first_less_by(1, -1, |k| k.key.cmp(&4));
+        let l0 = list.first_less_or_equal_by(1, -1, |k| k.key.cmp(&4));
+        let t0 = tree.first_less_or_equal_by(1, -1, |k| k.key.cmp(&4));
         assert_eq!(l0, t0);
 
         tree.insert(Key::new(4, 5), 4, 1);
         list.insert(Key::new(4, 5), 4, 1);
 
-        let l1 = list.first_less_by(1, -1, |k| k.key.cmp(&1));
-        let t1 = tree.first_less_by(1, -1, |k| k.key.cmp(&1));
+        let l1 = list.first_less_or_equal_by(1, -1, |k| k.key.cmp(&1));
+        let t1 = tree.first_less_or_equal_by(1, -1, |k| k.key.cmp(&1));
         assert_eq!(l1, t1);
 
-        let l2 = list.first_less_by(2, -1, |k| k.key.cmp(&0));
-        let t2 = tree.first_less_by(2, -1, |k| k.key.cmp(&0));
+        let l2 = list.first_less_or_equal_by(2, -1, |k| k.key.cmp(&0));
+        let t2 = tree.first_less_or_equal_by(2, -1, |k| k.key.cmp(&0));
         assert_eq!(l2, t2);
     }
 
@@ -475,56 +475,56 @@ mod tests {
         tree.insert(key, key.key, 0);
         list.insert(key, key.key, 0);
 
-        let l = list.first_less_by(0, -1, |k| k.key.cmp(&5));
-        let t = tree.first_less_by(0, -1, |k| k.key.cmp(&5));
+        let l = list.first_less_or_equal_by(0, -1, |k| k.key.cmp(&5));
+        let t = tree.first_less_or_equal_by(0, -1, |k| k.key.cmp(&5));
         assert_eq!(l, t);
 
         let key = Key::new(5, 1);
         tree.insert(key, key.key, 0);
         list.insert(key, key.key, 0);
 
-        let l = list.first_less_by(0, -1, |k| k.key.cmp(&4));
-        let t = tree.first_less_by(0, -1, |k| k.key.cmp(&4));
+        let l = list.first_less_or_equal_by(0, -1, |k| k.key.cmp(&4));
+        let t = tree.first_less_or_equal_by(0, -1, |k| k.key.cmp(&4));
         assert_eq!(l, t);
 
         let key = Key::new(4, 1);
         tree.insert(key, key.key, 0);
         list.insert(key, key.key, 0);
 
-        let l = list.first_less_by(1, -1, |k| k.key.cmp(&8));
-        let t = tree.first_less_by(1, -1, |k| k.key.cmp(&8));
+        let l = list.first_less_or_equal_by(1, -1, |k| k.key.cmp(&8));
+        let t = tree.first_less_or_equal_by(1, -1, |k| k.key.cmp(&8));
         assert_eq!(l, t);
 
         let key = Key::new(8, 2);
         tree.insert(key, key.key, 1);
         list.insert(key, key.key, 1);
 
-        let l = list.first_less_by(1, -1, |k| k.key.cmp(&0));
-        let t = tree.first_less_by(1, -1, |k| k.key.cmp(&0));
+        let l = list.first_less_or_equal_by(1, -1, |k| k.key.cmp(&0));
+        let t = tree.first_less_or_equal_by(1, -1, |k| k.key.cmp(&0));
         assert_eq!(l, t);
 
         let key = Key::new(0, 3);
         tree.insert(key, key.key, 1);
         list.insert(key, key.key, 1);
 
-        let l = list.first_less_by(2, -1, |k| k.key.cmp(&7));
-        let t = tree.first_less_by(2, -1, |k| k.key.cmp(&7));
+        let l = list.first_less_or_equal_by(2, -1, |k| k.key.cmp(&7));
+        let t = tree.first_less_or_equal_by(2, -1, |k| k.key.cmp(&7));
         assert_eq!(l, t);
 
         let key = Key::new(7, 4);
         tree.insert(key, key.key, 2);
         list.insert(key, key.key, 2);
 
-        let l = list.first_less_by(3, -1, |k| k.key.cmp(&2));
-        let t = tree.first_less_by(3, -1, |k| k.key.cmp(&2));
+        let l = list.first_less_or_equal_by(3, -1, |k| k.key.cmp(&2));
+        let t = tree.first_less_or_equal_by(3, -1, |k| k.key.cmp(&2));
         assert_eq!(l, t);
 
         let key = Key::new(2, 5);
         tree.insert(key, key.key, 3);
         list.insert(key, key.key, 3);
 
-        let l = list.first_less_by(3, -1, |k| k.key.cmp(&6));
-        let t = tree.first_less_by(3, -1, |k| k.key.cmp(&6));
+        let l = list.first_less_or_equal_by(3, -1, |k| k.key.cmp(&6));
+        let t = tree.first_less_or_equal_by(3, -1, |k| k.key.cmp(&6));
         assert_eq!(l, t);
     }
 
@@ -585,8 +585,8 @@ mod tests {
         for i in 0..tasks.len() - 1 {
             let task = &tasks[i];
             if task.exp == 0 {
-                let list_result = list.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
-                let tree_result = tree.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+                let list_result = list.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
+                let tree_result = tree.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
                 assert_eq!(list_result, tree_result);
             } else {
                 tree.insert(Key::new(task.val, task.exp), task.val, task.time);
@@ -597,8 +597,8 @@ mod tests {
         // println!("list: {:?}", &list.into_ordered_vec(73));
 
         let task = &tasks.last().unwrap();
-        let list_result = list.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
-        let tree_result = tree.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+        let list_result = list.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
+        let tree_result = tree.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
         assert_eq!(list_result, tree_result);
     }
 
@@ -622,8 +622,8 @@ mod tests {
 
         for task in tasks {
             if task.exp == 0 {
-                let list_result = list.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
-                let tree_result = tree.first_less_by(task.time, -1, |k| k.key.cmp(&task.val));
+                let list_result = list.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
+                let tree_result = tree.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
                 assert_eq!(list_result, tree_result);
             } else {
                 tree.insert(Key::new(task.val, task.exp), task.val, task.time);
@@ -633,8 +633,8 @@ mod tests {
 
         // println!("list: {:?}", &list.into_ordered_vec(73));
 
-        let list_result = list.first_less_by(4, -1, |k| k.key.cmp(&16));
-        let tree_result = tree.first_less_by(4, -1, |k| k.key.cmp(&16));
+        let list_result = list.first_less_or_equal_by(4, -1, |k| k.key.cmp(&16));
+        let tree_result = tree.first_less_or_equal_by(4, -1, |k| k.key.cmp(&16));
         assert_eq!(list_result, tree_result);
     }
 
@@ -764,8 +764,8 @@ mod tests {
                 let old_time = numbers[index];
                 let val = index as i32;
 
-                let list_result = list.first_less_by(time, -1, |k| k.key.cmp(&val));
-                let tree_result = tree.first_less_by(time, -1, |k| k.key.cmp(&val));
+                let list_result = list.first_less_or_equal_by(time, -1, |k| k.key.cmp(&val));
+                let tree_result = tree.first_less_or_equal_by(time, -1, |k| k.key.cmp(&val));
 
                 task.push(Task { time, val, exp: 0 });
 

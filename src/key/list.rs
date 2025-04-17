@@ -24,7 +24,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
         self.buffer.is_empty()
     }
 
-    #[inline(always)]
+    #[inline]
     fn insert(&mut self, key: K, val: V, time: E) {
         self.clear_expired(time);
         self.min_exp = self.min_exp.min(key.expiration());
@@ -35,6 +35,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
         self.buffer.insert(index, Entity::new(key, val));
     }
 
+    #[inline]
     fn get_value(&mut self, time: E, key: K) -> Option<V> {
         self.clear_expired(time);
         if let Ok(index) = self.buffer.binary_search_by_key(&key, |e| e.key) {
@@ -44,7 +45,22 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
         }
     }
 
+    #[inline]
     fn first_less(&mut self, time: E, default: V, key: K) -> V {
+        self.clear_expired(time);
+        let index = self.buffer
+            .binary_search_by(|e| e.key.cmp(&key))
+            .unwrap_or_else(|index| index);
+
+        if index > 0 {
+            unsafe { self.buffer.get_unchecked(index - 1) }.val
+        } else {
+            default
+        }
+    }
+
+    #[inline]
+    fn first_less_or_equal(&mut self, time: E, default: V, key: K) -> V {
         self.clear_expired(time);
         match self.buffer.binary_search_by(|e| e.key.cmp(&key)) {
             Ok(index) => unsafe { self.buffer.get_unchecked(index) }.val,
@@ -58,7 +74,8 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
         }
     }
 
-    fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    #[inline]
+    fn first_less_or_equal_by<F>(&mut self, time: E, default: V, f: F) -> V
     where
         F: Fn(K) -> Ordering,
     {

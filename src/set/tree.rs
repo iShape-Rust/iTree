@@ -186,7 +186,7 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
 
         while index != EMPTY_REF {
             let node = self.node(index);
-            match key.cmp(&node.value.key()) {
+            match key.cmp(node.value.key()) {
                 Ordering::Equal => return Some(&node.value),
                 Ordering::Less => index = node.left,
                 Ordering::Greater => index = node.right,
@@ -243,7 +243,7 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
 
         while index != EMPTY_REF {
             let node = self.node(index);
-            match key.cmp(&node.value.key()) {
+            match key.cmp(node.value.key()) {
                 Ordering::Equal => return index,
                 Ordering::Less => index = node.left,
                 Ordering::Greater => index = node.right

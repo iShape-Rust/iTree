@@ -51,11 +51,16 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
     }
 
     #[inline]
-    fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    fn first_less_or_equal(&mut self, time: E, default: V, key: K) -> V {
+        self.search_first_less_or_equal(time, default, key)
+    }
+
+    #[inline]
+    fn first_less_or_equal_by<F>(&mut self, time: E, default: V, f: F) -> V
     where
         F: Fn(K) -> Ordering
     {
-        self.search_first_less_by(time, default, f)
+        self.search_first_less_or_equal_by(time, default, f)
     }
 
     fn clear(&mut self) {
@@ -207,6 +212,24 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
         while index != EMPTY_REF {
             let entity = self.node(index).entity;
             match entity.key.cmp(&key) {
+                Ordering::Less => {
+                    result = entity.val;
+                    index = self.expire_right(index, time);
+                },
+                _ => index = self.expire_left(index, time),
+            }
+        }
+
+        result
+    }
+
+    #[inline]
+    fn search_first_less_or_equal(&mut self, time: E, default: V, key: K) -> V {
+        let mut index = self.expire_root(time);
+        let mut result = default;
+        while index != EMPTY_REF {
+            let entity = self.node(index).entity;
+            match entity.key.cmp(&key) {
                 Ordering::Equal => return entity.val,
                 Ordering::Less => {
                     result = entity.val;
@@ -220,7 +243,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn search_first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    fn search_first_less_or_equal_by<F>(&mut self, time: E, default: V, f: F) -> V
     where
         F: Fn(K) -> Ordering,
     {
