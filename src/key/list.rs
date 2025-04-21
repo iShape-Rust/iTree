@@ -60,6 +60,23 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
     }
 
     #[inline]
+    fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
+    where
+        F: Fn(K) -> Ordering
+    {
+        self.clear_expired(time);
+        let index = self.buffer
+            .binary_search_by(|e| f(e.key))
+            .unwrap_or_else(|index| index);
+
+        if index > 0 {
+            unsafe { self.buffer.get_unchecked(index - 1) }.val
+        } else {
+            default
+        }
+    }
+
+    #[inline]
     fn first_less_or_equal(&mut self, time: E, default: V, key: K) -> V {
         self.clear_expired(time);
         match self.buffer.binary_search_by(|e| e.key.cmp(&key)) {
