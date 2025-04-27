@@ -118,7 +118,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpList<K, E, V> {
     #[inline]
-    pub(super) fn clear_expired(&mut self, time: E) {
+    pub fn clear_expired(&mut self, time: E) {
         if self.min_exp > time {
             return;
         }
