@@ -3,6 +3,7 @@ use crate::key::exp::KeyExpCollection;
 use crate::{Expiration, ExpiredKey};
 use std::cmp::Ordering;
 
+#[derive(Clone)]
 pub struct KeyExpList<K, E, V> {
     pub(super) buffer: Vec<Entity<K, E, V>>,
     min_exp: E,
