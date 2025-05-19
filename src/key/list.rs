@@ -17,6 +17,14 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpList<K, E, V> {
             min_exp: E::max_expiration(),
         }
     }
+
+    #[inline(always)]
+    pub fn reserve_capacity(&mut self, capacity: usize) {
+        let additional = capacity.saturating_sub(self.buffer.capacity());
+        if additional > 0 {
+            self.buffer.reserve(additional);
+        }
+    }
 }
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for KeyExpList<K, E, V> {

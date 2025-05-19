@@ -19,13 +19,13 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
     }
 
     #[inline]
-    fn reserve(&mut self, length: usize) {
-        debug_assert!(length > 0);
+    pub(super) fn reserve(&mut self, additional: usize) {
+        debug_assert!(additional > 0);
         let n = self.buffer.len() as u32;
-        let l = length as u32;
-        self.buffer.reserve(length);
-        self.buffer.resize(self.buffer.len() + length, Node::default());
-        self.unused.reserve(length);
+        let l = additional as u32;
+        self.buffer.reserve(additional);
+        self.buffer.resize(self.buffer.len() + additional, Node::default());
+        self.unused.reserve(additional);
         self.unused.extend((n..n + l).rev());
     }
 
