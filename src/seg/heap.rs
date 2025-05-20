@@ -112,6 +112,8 @@ impl Iterator for BitIter {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+    use alloc::vec::Vec;
     use crate::seg::heap::{BitIter, Heap32};
 
     #[test]

@@ -31,7 +31,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Default for Node<K, E, V> {
             left: 0,
             right: 0,
             color: Color::Red,
-            entity: unsafe { std::mem::zeroed() },
+            entity: unsafe { core::mem::zeroed() },
         }
     }
 }

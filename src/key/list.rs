@@ -1,7 +1,8 @@
+use alloc::vec::Vec;
 use crate::key::entity::Entity;
 use crate::key::exp::KeyExpCollection;
 use crate::{Expiration, ExpiredKey};
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 #[derive(Clone)]
 pub struct KeyExpList<K, E, V> {

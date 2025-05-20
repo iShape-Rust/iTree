@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use crate::{Expiration, ExpiredKey, EMPTY_REF};
 use crate::key::list::KeyExpList;
 use crate::key::node::{Color, Node};

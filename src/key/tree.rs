@@ -2,8 +2,8 @@ use crate::key::exp::KeyExpCollection;
 use crate::key::node::{Color, Node};
 use crate::key::pool::Pool;
 use crate::{Expiration, ExpiredKey, EMPTY_REF};
-use std::cmp::Ordering;
-use std::marker::PhantomData;
+use core::cmp::Ordering;
+use core::marker::PhantomData;
 use crate::key::entity::Entity;
 
 pub struct KeyExpTree<K, E, V> {

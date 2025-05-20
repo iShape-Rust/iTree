@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 use crate::EMPTY_REF;
 use crate::map::entity::Entity;
 use crate::map::node::{Color, Node};

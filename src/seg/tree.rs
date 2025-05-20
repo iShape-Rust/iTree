@@ -1,9 +1,11 @@
+use alloc::vec;
+use alloc::vec::Vec;
 use crate::seg::chunk::Chunk;
 use crate::seg::entity::Entity;
 use crate::seg::exp::{SegExpCollection, SegRange};
 use crate::seg::heap::BitIter;
 use crate::{Expiration, ExpiredVal};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 use crate::seg::layout::Layout;
 
 pub struct SegExpTree<R, E, V> {
@@ -159,6 +161,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
     use crate::ExpiredVal;
     use crate::seg::exp::{SegExpCollection, SegRange};
     use crate::seg::tree::SegExpTree;

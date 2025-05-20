@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
-use std::marker::PhantomData;
+use core::cmp::Ordering;
+use core::marker::PhantomData;
 use crate::EMPTY_REF;
 use crate::set::node::{Color, Node};
 use crate::set::pool::Pool;

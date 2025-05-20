@@ -1,4 +1,5 @@
-use std::cmp::Ordering;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
 use crate::EMPTY_REF;
 use crate::map::entity::Entity;
 use crate::map::sort::MapCollection;

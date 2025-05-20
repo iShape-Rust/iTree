@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 pub trait MapCollection<K, V> {
     fn is_empty(&self) -> bool;

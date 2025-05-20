@@ -1,3 +1,5 @@
+use alloc::vec;
+use alloc::vec::Vec;
 use crate::seg::entity::Entity;
 use crate::{Expiration, ExpiredVal};
 

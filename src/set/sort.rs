@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 pub trait KeyValue<K> {
     fn key(&self) -> &K;
