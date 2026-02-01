@@ -62,16 +62,6 @@ impl<K: Ord + Copy, V: KeyValue<K>> SetCollection<K, V> for SetList<V> {
     }
 
     #[inline]
-    fn value_by_index(&self, index: u32) -> &V {
-        unsafe { self.buffer.get_unchecked(index as usize) }
-    }
-
-    #[inline]
-    fn value_by_index_mut(&mut self, index: u32) -> &mut V {
-        unsafe { self.buffer.get_unchecked_mut(index as usize) }
-    }
-
-    #[inline]
     fn first_index_less(&self, key: &K) -> u32 {
         match self.buffer.binary_search_by(|e| e.key().cmp(key)) {
             Ok(index) => index as u32,
@@ -99,6 +89,32 @@ impl<K: Ord + Copy, V: KeyValue<K>> SetCollection<K, V> for SetList<V> {
                     EMPTY_REF
                 }
             }
+        }
+    }
+
+    #[inline]
+    fn first_less_by<F>(&self, f: F) -> Option<&V>
+    where
+        F: Fn(&K) -> Ordering,
+    {
+        let index = self.first_index_less_by(f);
+        if index == EMPTY_REF {
+            None
+        } else {
+            self.buffer.get(index as usize)
+        }
+    }
+
+    #[inline]
+    fn first_less_by_mut<F>(&mut self, f: F) -> Option<&mut V>
+    where
+        F: Fn(&K) -> Ordering,
+    {
+        let index = self.first_index_less_by(f);
+        if index == EMPTY_REF {
+            None
+        } else {
+            self.buffer.get_mut(index as usize)
         }
     }
 

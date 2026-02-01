@@ -12,10 +12,14 @@ pub trait SetCollection<K, V> {
     fn get_value(&self, key: &K) -> Option<&V>;
     fn index_after(&self, index: u32) -> u32;
     fn index_before(&self, index: u32) -> u32;
-    fn value_by_index(&self, index: u32) -> &V;
-    fn value_by_index_mut(&mut self, index: u32) -> &mut V;
     fn first_index_less(&self, key: &K) -> u32;
     fn first_index_less_by<F>(&self, f: F) -> u32
+    where
+        F: Fn(&K) -> Ordering;
+    fn first_less_by<F>(&self, f: F) -> Option<&V>
+    where
+        F: Fn(&K) -> Ordering;
+    fn first_less_by_mut<F>(&mut self, f: F) -> Option<&mut V>
     where
         F: Fn(&K) -> Ordering;
 
