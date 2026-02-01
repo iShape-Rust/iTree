@@ -65,7 +65,7 @@ where
         V: 'a;
 
     #[inline]
-    fn iter_by_range(&mut self, range: SegRange<R>, time: E) -> SegExpTreeIterator<R, E, V> {
+    fn iter_by_range(&mut self, range: SegRange<R>, time: E) -> SegExpTreeIterator<'_, R, E, V> {
         let mask = self.layout.intersect_mask(range.min.into(), range.max.into());
         SegExpTreeIterator::new(mask, time, self)
     }

@@ -37,7 +37,7 @@ impl<'a, K, E, V> Iterator for OrderedIterator<'a, K, E, V> {
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpList<K, E, V> {
 
     #[inline]
-    pub fn ordered_values(&self) -> OrderedIterator<K, E, V> {
+    pub fn ordered_values(&self) -> OrderedIterator<'_, K, E, V> {
         OrderedIterator::new(self)
     }
 
