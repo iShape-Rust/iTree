@@ -113,10 +113,7 @@ impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K
         if index == EMPTY_REF || index == NIL_INDEX {
             return None;
         }
-        self.store
-            .buffer
-            .get(index as usize)
-            .map(|node| &node.value)
+        self.store.buffer.get(index as usize).map(|node| &node.value)
     }
 
     #[inline]
