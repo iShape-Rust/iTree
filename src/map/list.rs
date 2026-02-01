@@ -1,8 +1,8 @@
-use alloc::vec::Vec;
-use core::cmp::Ordering;
 use crate::EMPTY_REF;
 use crate::map::entity::Entity;
 use crate::map::sort::MapCollection;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
 
 pub struct MapList<K, V> {
     pub(super) buffer: Vec<Entity<K, V>>,
@@ -12,7 +12,7 @@ impl<K: Copy, V: Clone> MapList<K, V> {
     #[inline(always)]
     pub fn new(capacity: usize) -> Self {
         Self {
-            buffer: Vec::with_capacity(capacity)
+            buffer: Vec::with_capacity(capacity),
         }
     }
 }

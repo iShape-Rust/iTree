@@ -1,13 +1,12 @@
-use alloc::vec::Vec;
 use crate::map::node::Node;
+use alloc::vec::Vec;
 
 pub(super) struct Pool<K, V> {
     pub(super) buffer: Vec<Node<K, V>>,
-    pub(super) unused: Vec<u32>
+    pub(super) unused: Vec<u32>,
 }
 
 impl<K: Copy + Default, V: Clone + Default> Pool<K, V> {
-
     #[inline]
     pub(super) fn new(capacity: usize) -> Self {
         let capacity = capacity.max(8);
@@ -37,7 +36,6 @@ impl<K: Copy + Default, V: Clone + Default> Pool<K, V> {
         }
         self.unused.pop().unwrap()
     }
-
 
     #[inline(always)]
     pub(super) fn put_back(&mut self, index: u32) {

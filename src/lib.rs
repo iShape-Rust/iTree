@@ -1,8 +1,8 @@
 #![no_std]
 extern crate alloc;
 
-pub mod map;
 pub mod key;
+pub mod map;
 pub mod seg;
 pub mod set;
 

@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
-use core::cmp::Ordering;
 use crate::EMPTY_REF;
 use crate::set::sort::{KeyValue, SetCollection};
+use alloc::vec::Vec;
+use core::cmp::Ordering;
 
 pub struct SetList<V> {
     pub(super) buffer: Vec<V>,
@@ -11,7 +11,7 @@ impl<V> SetList<V> {
     #[inline(always)]
     pub fn new(capacity: usize) -> Self {
         Self {
-            buffer: Vec::with_capacity(capacity)
+            buffer: Vec::with_capacity(capacity),
         }
     }
 }

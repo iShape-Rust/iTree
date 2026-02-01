@@ -1,7 +1,7 @@
-use alloc::vec;
-use alloc::vec::Vec;
 use crate::seg::entity::Entity;
 use crate::{Expiration, ExpiredVal};
+use alloc::vec;
+use alloc::vec::Vec;
 
 #[derive(Clone)]
 pub(super) struct Chunk<E, V> {
@@ -11,9 +11,7 @@ pub(super) struct Chunk<E, V> {
 impl<E: Expiration, V: ExpiredVal<E>> Chunk<E, V> {
     #[inline]
     pub(super) fn new() -> Self {
-        Self {
-            buffer: vec![],
-        }
+        Self { buffer: vec![] }
     }
 
     #[inline]

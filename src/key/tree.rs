@@ -1,15 +1,15 @@
+use crate::key::entity::Entity;
 use crate::key::exp::KeyExpCollection;
 use crate::key::node::{Color, Node};
 use crate::key::pool::Pool;
-use crate::{Expiration, ExpiredKey, EMPTY_REF};
+use crate::{EMPTY_REF, Expiration, ExpiredKey};
 use core::cmp::Ordering;
 use core::marker::PhantomData;
-use crate::key::entity::Entity;
 
 pub struct KeyExpTree<K, E, V> {
     pub(super) store: Pool<K, E, V>,
     pub(super) root: u32,
-    phantom_data: PhantomData<E>
+    phantom_data: PhantomData<E>,
 }
 
 const NIL_INDEX: u32 = 0;
@@ -60,7 +60,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
 
     fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
     where
-        F: Fn(K) -> Ordering
+        F: Fn(K) -> Ordering,
     {
         self.search_first_less_by(time, default, f)
     }
@@ -73,7 +73,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
     #[inline]
     fn first_less_or_equal_by<F>(&mut self, time: E, default: V, f: F) -> V
     where
-        F: Fn(K) -> Ordering
+        F: Fn(K) -> Ordering,
     {
         self.search_first_less_or_equal_by(time, default, f)
     }
@@ -215,7 +215,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
                 Ordering::Less => {
                     result = entity.val;
                     index = self.expire_right(index, time);
-                },
+                }
                 _ => index = self.expire_left(index, time),
             }
         }
@@ -234,7 +234,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
                 Ordering::Less => {
                     result = entity.val;
                     index = self.expire_right(index, time);
-                },
+                }
                 Ordering::Greater => index = self.expire_left(index, time),
             }
         }
@@ -255,7 +255,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
                 Ordering::Less => {
                     result = entity.val;
                     index = self.expire_right(index, time);
-                },
+                }
                 _ => index = self.expire_left(index, time),
             }
         }
@@ -277,7 +277,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
                 Ordering::Less => {
                     result = entity.val;
                     index = self.expire_right(index, time);
-                },
+                }
                 Ordering::Greater => index = self.expire_left(index, time),
             }
         }
@@ -349,7 +349,6 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
             self.fix_red_black_properties_after_insert(new_index, p_index);
         }
     }
-
 
     fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
         // parent is red!
@@ -487,7 +486,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
 
     pub(super) fn delete_index(&mut self, index: u32) {
         // Node has zero or one child
-        let mut delete_index= index;
+        let mut delete_index = index;
 
         let node = self.node(index);
         let mut nd_left = node.left;

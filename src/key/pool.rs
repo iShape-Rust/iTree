@@ -1,10 +1,10 @@
-use alloc::vec::Vec;
-use crate::{Expiration, ExpiredKey};
 use crate::key::node::Node;
+use crate::{Expiration, ExpiredKey};
+use alloc::vec::Vec;
 
 pub(super) struct Pool<K, E, V> {
     pub(super) buffer: Vec<Node<K, E, V>>,
-    pub(super) unused: Vec<u32>
+    pub(super) unused: Vec<u32>,
 }
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
@@ -25,7 +25,8 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
         let n = self.buffer.len() as u32;
         let l = additional as u32;
         self.buffer.reserve(additional);
-        self.buffer.resize(self.buffer.len() + additional, Node::default());
+        self.buffer
+            .resize(self.buffer.len() + additional, Node::default());
         self.unused.reserve(additional);
         self.unused.extend((n..n + l).rev());
     }
@@ -37,7 +38,6 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> Pool<K, E, V> {
         }
         self.unused.pop().unwrap()
     }
-
 
     #[inline(always)]
     pub(super) fn put_back(&mut self, index: u32) {

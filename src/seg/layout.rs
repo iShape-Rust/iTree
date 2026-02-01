@@ -56,7 +56,6 @@ impl Layout {
 mod tests {
     use crate::seg::layout::Layout;
 
-
     #[test]
     fn test_00() {
         let layout = Layout::new(0, 31).unwrap();

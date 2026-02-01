@@ -1,14 +1,14 @@
-use core::cmp::Ordering;
-use core::marker::PhantomData;
 use crate::EMPTY_REF;
 use crate::set::node::{Color, Node};
 use crate::set::pool::Pool;
 use crate::set::sort::{KeyValue, SetCollection};
+use core::cmp::Ordering;
+use core::marker::PhantomData;
 
 pub struct SetTree<K, V> {
     pub(super) store: Pool<V>,
     pub(super) root: u32,
-    phantom_data: PhantomData<K>
+    phantom_data: PhantomData<K>,
 }
 
 const NIL_INDEX: u32 = 0;
@@ -109,7 +109,7 @@ impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K
     #[inline]
     fn first_index_less_by<F>(&self, f: F) -> u32
     where
-        F: Fn(&K) -> Ordering
+        F: Fn(&K) -> Ordering,
     {
         self.search_first_less_by(f)
     }
@@ -207,7 +207,7 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
                 Ordering::Less => {
                     result = index;
                     index = node.right;
-                },
+                }
                 Ordering::Greater => index = node.left,
             }
         }
@@ -229,7 +229,7 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
                 Ordering::Less => {
                     result = index;
                     index = node.right;
-                },
+                }
                 Ordering::Greater => index = node.left,
             }
         }
@@ -246,7 +246,7 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
             match key.cmp(node.value.key()) {
                 Ordering::Equal => return index,
                 Ordering::Less => index = node.left,
-                Ordering::Greater => index = node.right
+                Ordering::Greater => index = node.right,
             }
         }
 
@@ -463,7 +463,7 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
 
     pub(super) fn delete_index(&mut self, index: u32) {
         // Node has zero or one child
-        let mut delete_index= index;
+        let mut delete_index = index;
 
         let node = self.node(index);
         let mut nd_left = node.left;

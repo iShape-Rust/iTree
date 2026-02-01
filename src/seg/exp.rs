@@ -1,11 +1,10 @@
 #[derive(Debug, Clone, Copy)]
 pub struct SegRange<R> {
     pub min: R,
-    pub max: R
+    pub max: R,
 }
 
 pub trait SegExpCollection<R, E, V> {
-
     type Iter<'a>: Iterator<Item = V>
     where
         Self: 'a;
@@ -19,9 +18,6 @@ pub trait SegExpCollection<R, E, V> {
 #[cfg(test)]
 mod tests {
 
-
     #[test]
-    fn test_00() {
-
-    }
+    fn test_00() {}
 }

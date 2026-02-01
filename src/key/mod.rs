@@ -1,8 +1,8 @@
 pub mod array;
+mod entity;
 pub mod exp;
-pub mod list;
-pub mod tree;
 pub mod iter;
+pub mod list;
 mod node;
 mod pool;
-mod entity;
+pub mod tree;

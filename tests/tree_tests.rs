@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use rand::prelude::SliceRandom;
-    use rand::{Rng, rng};
-    use std::cmp::Ordering;
     use i_tree::ExpiredKey;
     use i_tree::key::array::IntoArray;
     use i_tree::key::exp::KeyExpCollection;
     use i_tree::key::list::KeyExpList;
     use i_tree::key::tree::KeyExpTree;
+    use rand::prelude::SliceRandom;
+    use rand::{Rng, rng};
+    use std::cmp::Ordering;
 
     struct Task {
         time: i32,
@@ -381,9 +381,7 @@ mod tests {
 
     #[test]
     fn test_14() {
-        let vals0 = vec![
-            32, 34, 2, 4, 16, 10, 28, 24, 12, 30, 18, 6, 36, 22, 14, 20, 8, 26,
-        ];
+        let vals0 = vec![32, 34, 2, 4, 16, 10, 28, 24, 12, 30, 18, 6, 36, 22, 14, 20, 8, 26];
         let mut vals1 = vec![
             27, 1, 17, 13, 23, 29, 21, 37, 15, 7, 9, 35, 5, 3, 25, 31, 19, 11, 33,
         ];
@@ -414,12 +412,7 @@ mod tests {
         let mut tree = KeyExpTree::new(8);
         let mut list = KeyExpList::new(20);
 
-        let keys = vec![
-            Key::new(8, 4),
-            Key::new(2, 4),
-            Key::new(5, 3),
-            Key::new(0, 5),
-        ];
+        let keys = vec![Key::new(8, 4), Key::new(2, 4), Key::new(5, 3), Key::new(0, 5)];
 
         for &key in keys.iter() {
             tree.insert(key, key.key, 0);
@@ -658,7 +651,6 @@ mod tests {
         tree.insert(k1, k1.key, 0);
         tree.insert(k1, k1.key, 0);
         tree.insert(k2, k2.key, 0);
-
 
         assert_eq!(tree.into_ordered_vec(0), vec![0, 1, 1, 1, 2]);
         assert_eq!(list.into_ordered_vec(0), vec![0, 1, 1, 1, 2]);

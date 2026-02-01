@@ -3,7 +3,6 @@ use crate::seg::bit::BitOp;
 pub(super) struct Heap32 {}
 
 impl Heap32 {
-
     pub(super) const SUB_CAPACITY: u32 = 32 - 1;
     pub(super) const POWER: u32 = 32_u32.ilog2();
 
@@ -41,7 +40,7 @@ impl Heap32 {
         debug_assert!(end < 32);
 
         if end - start == 31 {
-            return 1
+            return 1;
         }
 
         let mut w = Self::range_to_fill_mask(start, end);
@@ -84,7 +83,6 @@ impl Heap32 {
     }
 }
 
-
 pub(super) struct BitIter {
     value: u64,
 }
@@ -112,9 +110,9 @@ impl Iterator for BitIter {
 
 #[cfg(test)]
 mod tests {
+    use crate::seg::heap::{BitIter, Heap32};
     use alloc::vec;
     use alloc::vec::Vec;
-    use crate::seg::heap::{BitIter, Heap32};
 
     #[test]
     fn test_00() {
@@ -193,5 +191,4 @@ mod tests {
         let template: Vec<_> = (0..63).collect();
         assert_eq!(indices, template);
     }
-
 }

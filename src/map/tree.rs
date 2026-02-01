@@ -1,13 +1,13 @@
-use core::cmp::Ordering;
 use crate::EMPTY_REF;
 use crate::map::entity::Entity;
 use crate::map::node::{Color, Node};
-use crate::map::sort::MapCollection;
 use crate::map::pool::Pool;
+use crate::map::sort::MapCollection;
+use core::cmp::Ordering;
 
 pub struct MapTree<K, V> {
     pub(super) store: Pool<K, V>,
-    pub(super) root: u32
+    pub(super) root: u32,
 }
 
 const NIL_INDEX: u32 = 0;
@@ -71,7 +71,7 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapCollection<K, V> for MapTre
     #[inline]
     fn first_index_less_by<F>(&self, f: F) -> u32
     where
-        F: Fn(K) -> Ordering
+        F: Fn(K) -> Ordering,
     {
         self.search_first_less_by(f)
     }
@@ -169,7 +169,7 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
                 Ordering::Less => {
                     result = index;
                     index = node.right;
-                },
+                }
                 Ordering::Greater => index = node.left,
             }
         }
@@ -191,7 +191,7 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
                 Ordering::Less => {
                     result = index;
                     index = node.right;
-                },
+                }
                 Ordering::Greater => index = node.left,
             }
         }
@@ -208,7 +208,7 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
             match key.cmp(&node.entity.key) {
                 Ordering::Equal => return index,
                 Ordering::Less => index = node.left,
-                Ordering::Greater => index = node.right
+                Ordering::Greater => index = node.right,
             }
         }
 
@@ -280,7 +280,6 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
             self.fix_red_black_properties_after_insert(new_index, p_index);
         }
     }
-
 
     fn fix_red_black_properties_after_insert(&mut self, n_index: u32, p_origin: u32) {
         // parent is red!
@@ -418,7 +417,7 @@ impl<K: Copy + Ord + Default, V: Clone + Default> MapTree<K, V> {
 
     pub(super) fn delete_index(&mut self, index: u32) {
         // Node has zero or one child
-        let mut delete_index= index;
+        let mut delete_index = index;
 
         let node = self.node(index);
         let mut nd_left = node.left;

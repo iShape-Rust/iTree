@@ -1,13 +1,12 @@
-use alloc::vec::Vec;
 use crate::set::node::Node;
+use alloc::vec::Vec;
 
 pub(super) struct Pool<V> {
     pub(super) buffer: Vec<Node<V>>,
-    pub(super) unused: Vec<u32>
+    pub(super) unused: Vec<u32>,
 }
 
 impl<V: Clone + Default> Pool<V> {
-
     #[inline]
     pub(super) fn new(capacity: usize) -> Self {
         let capacity = capacity.max(8);

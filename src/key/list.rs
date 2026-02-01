@@ -1,7 +1,7 @@
-use alloc::vec::Vec;
 use crate::key::entity::Entity;
 use crate::key::exp::KeyExpCollection;
 use crate::{Expiration, ExpiredKey};
+use alloc::vec::Vec;
 use core::cmp::Ordering;
 
 #[derive(Clone)]
@@ -58,7 +58,8 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
     #[inline]
     fn first_less(&mut self, time: E, default: V, key: K) -> V {
         self.clear_expired(time);
-        let index = self.buffer
+        let index = self
+            .buffer
             .binary_search_by(|e| e.key.cmp(&key))
             .unwrap_or_else(|index| index);
 
@@ -72,10 +73,11 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for Key
     #[inline]
     fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
     where
-        F: Fn(K) -> Ordering
+        F: Fn(K) -> Ordering,
     {
         self.clear_expired(time);
-        let index = self.buffer
+        let index = self
+            .buffer
             .binary_search_by(|e| f(e.key))
             .unwrap_or_else(|index| index);
 

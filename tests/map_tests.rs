@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use rand::prelude::SliceRandom;
-    use rand::rng;
     use i_tree::map::list::MapList;
     use i_tree::map::sort::MapCollection;
     use i_tree::map::tree::MapTree;
+    use rand::prelude::SliceRandom;
+    use rand::rng;
 
     #[test]
     fn test_00() {

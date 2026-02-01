@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use std::cmp::Ordering;
     use i_tree::ExpiredKey;
     use i_tree::key::array::IntoArray;
     use i_tree::key::exp::KeyExpCollection;
     use i_tree::key::list::KeyExpList;
     use i_tree::key::tree::KeyExpTree;
+    use std::cmp::Ordering;
 
     #[derive(Debug, Clone, Copy)]
     struct Key {
@@ -72,7 +72,6 @@ mod tests {
 
         assert_eq!(tree.into_ordered_vec(0), vals);
     }
-
 
     #[test]
     fn test_dynamic_00() {

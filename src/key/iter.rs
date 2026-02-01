@@ -1,5 +1,5 @@
-use crate::{Expiration, ExpiredKey};
 use crate::key::list::KeyExpList;
+use crate::{Expiration, ExpiredKey};
 
 pub struct OrderedIterator<'a, K, E, V> {
     list: &'a KeyExpList<K, E, V>,
@@ -9,10 +9,7 @@ pub struct OrderedIterator<'a, K, E, V> {
 impl<'a, K, E, V> OrderedIterator<'a, K, E, V> {
     #[inline]
     pub(crate) fn new(list: &'a KeyExpList<K, E, V>) -> Self {
-        Self {
-            index: 0,
-            list,
-        }
+        Self { index: 0, list }
     }
 }
 impl<'a, K, E, V> Iterator for OrderedIterator<'a, K, E, V> {
@@ -35,10 +32,8 @@ impl<'a, K, E, V> Iterator for OrderedIterator<'a, K, E, V> {
 }
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpList<K, E, V> {
-
     #[inline]
     pub fn ordered_values(&self) -> OrderedIterator<'_, K, E, V> {
         OrderedIterator::new(self)
     }
-
 }

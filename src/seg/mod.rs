@@ -1,7 +1,7 @@
-pub mod tree;
+mod bit;
+mod chunk;
+mod entity;
 pub mod exp;
 mod heap;
-mod entity;
-mod chunk;
 mod layout;
-mod bit;
+pub mod tree;

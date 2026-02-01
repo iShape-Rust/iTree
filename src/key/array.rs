@@ -1,8 +1,8 @@
-use alloc::vec::Vec;
-use crate::{Expiration, ExpiredKey, EMPTY_REF};
 use crate::key::list::KeyExpList;
 use crate::key::node::{Color, Node};
 use crate::key::tree::KeyExpTree;
+use crate::{EMPTY_REF, Expiration, ExpiredKey};
+use alloc::vec::Vec;
 
 pub trait IntoArray<E, V> {
     fn into_ordered_vec(self, time: E) -> Vec<V>;
@@ -12,10 +12,9 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> IntoArray<E, V> for KeyExpList<K,
     #[inline]
     fn into_ordered_vec(mut self, time: E) -> Vec<V> {
         self.clear_expired(time);
-        self.buffer.iter().map(|e|e.val).collect()
+        self.buffer.iter().map(|e| e.val).collect()
     }
 }
-
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> IntoArray<E, V> for KeyExpTree<K, E, V> {
     #[inline]
@@ -27,7 +26,7 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> IntoArray<E, V> for KeyExpTree<K,
 struct StackNode {
     index: u32,
     left: u32,
-    right: u32
+    right: u32,
 }
 
 impl StackNode {
@@ -41,7 +40,6 @@ impl StackNode {
 }
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
-
     #[inline]
     fn create_ordered_list(&mut self, time: E) -> Vec<V> {
         self.expire_all(time);
@@ -97,7 +95,9 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
 
     #[inline]
     fn height(&self) -> usize {
-        if self.root == EMPTY_REF { return 0; }
+        if self.root == EMPTY_REF {
+            return 0;
+        }
         let mut node = self.node(self.root);
         let mut height = 1;
         while node.left != EMPTY_REF {
