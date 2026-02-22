@@ -104,31 +104,13 @@ impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K
         self.search_first_less_by(f)
     }
 
-    #[inline]
-    fn first_less_by<F>(&self, f: F) -> Option<&V>
-    where
-        F: Fn(&K) -> Ordering,
-    {
-        let index = self.search_first_less_by(f);
-        if index == EMPTY_REF || index == NIL_INDEX {
-            return None;
-        }
-        self.store.buffer.get(index as usize).map(|node| &node.value)
+    unsafe fn value_by_index(&self, index: u32) -> &V {
+        &self.node(index).value
     }
 
     #[inline]
-    fn first_less_by_mut<F>(&mut self, f: F) -> Option<&mut V>
-    where
-        F: Fn(&K) -> Ordering,
-    {
-        let index = self.search_first_less_by(f);
-        if index == EMPTY_REF || index == NIL_INDEX {
-            return None;
-        }
-        self.store
-            .buffer
-            .get_mut(index as usize)
-            .map(|node| &mut node.value)
+    unsafe fn value_by_index_mut(&mut self, index: u32) -> &mut V {
+        &mut self.node_mut(index).value
     }
 
     fn clear(&mut self) {

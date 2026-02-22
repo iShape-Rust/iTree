@@ -93,29 +93,13 @@ impl<K: Ord + Copy, V: KeyValue<K>> SetCollection<K, V> for SetList<V> {
     }
 
     #[inline]
-    fn first_less_by<F>(&self, f: F) -> Option<&V>
-    where
-        F: Fn(&K) -> Ordering,
-    {
-        let index = self.first_index_less_by(f);
-        if index == EMPTY_REF {
-            None
-        } else {
-            self.buffer.get(index as usize)
-        }
+    unsafe fn value_by_index(&self, index: u32) -> &V {
+        unsafe { self.buffer.get_unchecked(index as usize) }
     }
 
     #[inline]
-    fn first_less_by_mut<F>(&mut self, f: F) -> Option<&mut V>
-    where
-        F: Fn(&K) -> Ordering,
-    {
-        let index = self.first_index_less_by(f);
-        if index == EMPTY_REF {
-            None
-        } else {
-            self.buffer.get_mut(index as usize)
-        }
+    unsafe fn value_by_index_mut(&mut self, index: u32) -> &mut V {
+        unsafe { self.buffer.get_unchecked_mut(index as usize) }
     }
 
     #[inline]

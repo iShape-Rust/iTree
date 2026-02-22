@@ -16,12 +16,9 @@ pub trait SetCollection<K, V> {
     fn first_index_less_by<F>(&self, f: F) -> u32
     where
         F: Fn(&K) -> Ordering;
-    fn first_less_by<F>(&self, f: F) -> Option<&V>
-    where
-        F: Fn(&K) -> Ordering;
-    fn first_less_by_mut<F>(&mut self, f: F) -> Option<&mut V>
-    where
-        F: Fn(&K) -> Ordering;
+
+    unsafe fn value_by_index(&self, index: u32) -> &V;
+    unsafe fn value_by_index_mut(&mut self, index: u32) -> &mut V;
 
     fn clear(&mut self);
 }
