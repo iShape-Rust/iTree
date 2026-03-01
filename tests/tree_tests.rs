@@ -6,7 +6,7 @@ mod tests {
     use i_tree::key::list::KeyExpList;
     use i_tree::key::tree::KeyExpTree;
     use rand::prelude::SliceRandom;
-    use rand::{Rng, rng};
+    use rand::{rng, RngExt};
     use std::cmp::Ordering;
 
     struct Task {
