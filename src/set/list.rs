@@ -18,11 +18,6 @@ impl<V> SetList<V> {
 
 impl<K: Ord + Copy, V: KeyValue<K>> SetCollection<K, V> for SetList<V> {
     #[inline]
-    fn is_empty(&self) -> bool {
-        self.buffer.is_empty()
-    }
-
-    #[inline]
     fn insert(&mut self, val: V) {
         let index = self
             .buffer
@@ -32,47 +27,12 @@ impl<K: Ord + Copy, V: KeyValue<K>> SetCollection<K, V> for SetList<V> {
     }
 
     #[inline]
-    fn delete(&mut self, key: &K) {
-        if let Ok(index) = self.buffer.binary_search_by_key(key, |v| *v.key()) {
-            self.buffer.remove(index);
-        }
-    }
-
-    #[inline]
     fn delete_by_index(&mut self, index: u32) {
         self.buffer.remove(index as usize);
     }
 
-    #[inline]
-    fn get_value(&self, key: &K) -> Option<&V> {
-        if let Ok(index) = self.buffer.binary_search_by_key(&key, |v| v.key()) {
-            Some(unsafe { self.buffer.get_unchecked(index) })
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    fn index_after(&self, index: u32) -> u32 {
-        index + 1
-    }
-
     fn index_before(&self, index: u32) -> u32 {
         index - 1
-    }
-
-    #[inline]
-    fn first_index_less(&self, key: &K) -> u32 {
-        match self.buffer.binary_search_by(|e| e.key().cmp(key)) {
-            Ok(index) => index as u32,
-            Err(index) => {
-                if index > 0 {
-                    (index - 1) as u32
-                } else {
-                    EMPTY_REF
-                }
-            }
-        }
     }
 
     #[inline]
@@ -100,10 +60,5 @@ impl<K: Ord + Copy, V: KeyValue<K>> SetCollection<K, V> for SetList<V> {
     #[inline]
     unsafe fn value_by_index_mut(&mut self, index: u32) -> &mut V {
         unsafe { self.buffer.get_unchecked_mut(index as usize) }
-    }
-
-    #[inline]
-    fn clear(&mut self) {
-        self.buffer.clear();
     }
 }

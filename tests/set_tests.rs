@@ -1,98 +1,60 @@
 #[cfg(test)]
 mod tests {
+    use i_tree::EMPTY_REF;
     use i_tree::set::list::SetList;
-    use i_tree::set::sort::SetCollection;
+    use i_tree::set::sort::{KeyValue, SetCollection};
     use i_tree::set::tree::SetTree;
-    use rand::prelude::SliceRandom;
-    use rand::rng;
 
-    #[test]
-    fn test_00() {
-        let mut tree = SetTree::new(2);
-        tree.insert(1);
-        tree.insert(2);
-        let a1 = tree.get_value(&2);
-        assert_eq!(*a1.unwrap(), 2);
+    #[derive(Clone, Default, Debug, PartialEq, Eq)]
+    struct Item {
+        key: i32,
+        value: i32,
     }
 
-    #[test]
-    fn test_random_00() {
-        let n = 20;
-        let template: Vec<i32> = (1..n).collect();
-        let mut rng = rng();
-        for _ in 0..100 {
-            let mut array: Vec<i32> = template.clone();
-            array.shuffle(&mut rng);
-            let mut tree = SetTree::new(300);
-            let mut list = SetList::new(array.len());
-
-            while let Some(val) = array.pop() {
-                tree.insert(val);
-                list.insert(val);
-
-                for i in 0..n {
-                    let a = tree.get_value(&i);
-                    let b = list.get_value(&i);
-
-                    assert_eq!(a, b);
-                }
-            }
+    impl Item {
+        fn new(key: i32) -> Self {
+            Self { key, value: key }
         }
     }
 
-    #[test]
-    fn test_random_01() {
-        let n = 60;
-        let template: Vec<i32> = (1..n).collect();
-        let mut rng = rng();
-        for _ in 0..1000 {
-            let mut array: Vec<i32> = template.clone();
-            array.shuffle(&mut rng);
-            let mut tree = SetTree::new(300);
-            let mut list = SetList::new(array.len());
-
-            while let Some(val) = array.pop() {
-                tree.insert(val);
-                list.insert(val);
-
-                for i in 0..n {
-                    let a = tree.get_value(&i);
-                    let b = list.get_value(&i);
-                    assert_eq!(a, b);
-                }
-            }
+    impl KeyValue<i32> for Item {
+        fn key(&self) -> &i32 {
+            &self.key
         }
     }
 
+    fn run_used_set_operations<S: SetCollection<i32, Item>>(store: &mut S) {
+        store.insert(Item::new(1));
+        store.insert(Item::new(4));
+        store.insert(Item::new(8));
+
+        let i0 = store.first_index_less_by(|key| key.cmp(&0));
+        assert_eq!(i0, EMPTY_REF);
+
+        let i1 = store.first_index_less_by(|key| key.cmp(&5));
+        assert_eq!(unsafe { store.value_by_index(i1) }.key, 4);
+
+        unsafe { store.value_by_index_mut(i1) }.value = 40;
+        assert_eq!(unsafe { store.value_by_index(i1) }.value, 40);
+
+        let i2 = store.first_index_less_by(|key| key.cmp(&9));
+        let i3 = store.index_before(i2);
+        assert_eq!(unsafe { store.value_by_index(i3) }.key, 4);
+
+        store.delete_by_index(i3);
+        let i4 = store.first_index_less_by(|key| key.cmp(&5));
+        assert_eq!(unsafe { store.value_by_index(i4) }.key, 1);
+    }
+
     #[test]
-    fn test_random_02() {
-        let n = 100;
-        let template: Vec<i32> = (1..n).collect();
-        let mut rng = rng();
-        let mut values = Vec::new();
-        for _ in 0..1000 {
-            values.clear();
-            let mut array: Vec<i32> = template.clone();
-            array.shuffle(&mut rng);
-            let mut tree = SetTree::new(array.len());
-            let mut list = SetList::new(array.len());
+    fn list_supports_used_set_operations() {
+        let mut list = SetList::new(8);
+        run_used_set_operations(&mut list);
+    }
 
-            while let Some(val) = array.pop() {
-                tree.insert(val);
-                list.insert(val);
-                values.push(val);
-                for i in 0..n {
-                    let a = tree.get_value(&i);
-                    let b = list.get_value(&i);
-                    assert_eq!(a, b);
-                }
-
-                if values.len() > 16 {
-                    let val = values.pop().unwrap();
-                    tree.delete(&val);
-                    list.delete(&val);
-                }
-            }
-        }
+    #[test]
+    fn tree_supports_used_set_operations() {
+        let mut tree = SetTree::new(8);
+        run_used_set_operations(&mut tree);
     }
 }

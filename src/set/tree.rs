@@ -28,49 +28,13 @@ impl<K, V: Clone + Default> SetTree<K, V> {
 }
 impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K, V> {
     #[inline]
-    fn is_empty(&self) -> bool {
-        self.root == EMPTY_REF
-    }
-
-    #[inline]
     fn insert(&mut self, val: V) {
         self.insert_value(val);
     }
 
     #[inline]
-    fn delete(&mut self, key: &K) {
-        let index = self.find_index(key);
-        if index != EMPTY_REF {
-            self.delete_index(index);
-        }
-    }
-
-    #[inline]
     fn delete_by_index(&mut self, index: u32) {
         self.delete_index(index);
-    }
-
-    #[inline]
-    fn get_value(&self, key: &K) -> Option<&V> {
-        self.search_value(key)
-    }
-
-    #[inline]
-    fn index_after(&self, mut index: u32) -> u32 {
-        let node = self.node(index);
-        if node.right != EMPTY_REF {
-            self.find_left_minimum(node.right)
-        } else {
-            // find first parent where we not right
-            let mut parent_index = node.parent;
-            let mut parent = self.node(parent_index);
-            while parent.right == index {
-                index = parent_index;
-                parent_index = parent.parent;
-                parent = self.node(parent_index);
-            }
-            parent_index
-        }
     }
 
     #[inline]
@@ -92,11 +56,6 @@ impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K
     }
 
     #[inline]
-    fn first_index_less(&self, key: &K) -> u32 {
-        self.search_first_less(key)
-    }
-
-    #[inline]
     fn first_index_less_by<F>(&self, f: F) -> u32
     where
         F: Fn(&K) -> Ordering,
@@ -111,34 +70,6 @@ impl<K: Ord, V: KeyValue<K> + Clone + Default> SetCollection<K, V> for SetTree<K
     #[inline]
     unsafe fn value_by_index_mut(&mut self, index: u32) -> &mut V {
         &mut self.node_mut(index).value
-    }
-
-    fn clear(&mut self) {
-        if self.root == EMPTY_REF {
-            return;
-        }
-        self.store.put_back(self.root);
-        self.root = EMPTY_REF;
-
-        let mut n = 1;
-        while n > 0 {
-            let i0 = self.store.unused.len() - n;
-            n = 0;
-            for i in i0..self.store.unused.len() {
-                let index = self.store.unused[i];
-                let node = self.node(index);
-                let left = node.left;
-                let right = node.right;
-                if left != EMPTY_REF {
-                    self.store.put_back(left);
-                    n += 1;
-                }
-                if right != EMPTY_REF {
-                    self.store.put_back(right);
-                    n += 1;
-                }
-            }
-        }
     }
 }
 
@@ -180,41 +111,6 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
     }
 
     #[inline]
-    fn search_value(&self, key: &K) -> Option<&V> {
-        let mut index = self.root;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match key.cmp(node.value.key()) {
-                Ordering::Equal => return Some(&node.value),
-                Ordering::Less => index = node.left,
-                Ordering::Greater => index = node.right,
-            }
-        }
-
-        None
-    }
-
-    #[inline]
-    fn search_first_less(&self, key: &K) -> u32 {
-        let mut index = self.root;
-        let mut result = EMPTY_REF;
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match node.value.key().cmp(key) {
-                Ordering::Equal => return index,
-                Ordering::Less => {
-                    result = index;
-                    index = node.right;
-                }
-                Ordering::Greater => index = node.left,
-            }
-        }
-
-        result
-    }
-
-    #[inline]
     fn search_first_less_by<F>(&self, f: F) -> u32
     where
         F: Fn(&K) -> Ordering,
@@ -234,22 +130,6 @@ impl<K: Ord, V: Clone + Default + KeyValue<K>> SetTree<K, V> {
         }
 
         result
-    }
-
-    #[inline]
-    fn find_index(&self, key: &K) -> u32 {
-        let mut index = self.root;
-
-        while index != EMPTY_REF {
-            let node = self.node(index);
-            match key.cmp(node.value.key()) {
-                Ordering::Equal => return index,
-                Ordering::Less => index = node.left,
-                Ordering::Greater => index = node.right,
-            }
-        }
-
-        EMPTY_REF
     }
 
     #[inline]

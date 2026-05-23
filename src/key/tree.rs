@@ -38,36 +38,14 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
 
 impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpCollection<K, E, V> for KeyExpTree<K, E, V> {
     #[inline(always)]
-    fn is_empty(&self) -> bool {
-        self.root == EMPTY_REF
-    }
-
-    #[inline(always)]
     fn insert(&mut self, key: K, val: V, time: E) {
         debug_assert!(key.expiration() >= time, "The value is already expired");
         self.insert_entity(Entity::new(key, val), time);
     }
 
-    #[inline(always)]
-    fn get_value(&mut self, time: E, key: K) -> Option<V> {
-        self.search_value(time, key)
-    }
-
     #[inline]
     fn first_less(&mut self, time: E, default: V, key: K) -> V {
         self.search_first_less(time, default, key)
-    }
-
-    fn first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
-    where
-        F: Fn(K) -> Ordering,
-    {
-        self.search_first_less_by(time, default, f)
-    }
-
-    #[inline]
-    fn first_less_or_equal(&mut self, time: E, default: V, key: K) -> V {
-        self.search_first_less_or_equal(time, default, key)
     }
 
     #[inline]
@@ -190,68 +168,12 @@ impl<K: ExpiredKey<E>, E: Expiration, V: Copy> KeyExpTree<K, E, V> {
     }
 
     #[inline]
-    fn search_value(&mut self, time: E, key: K) -> Option<V> {
-        let mut index = self.expire_root(time);
-
-        while index != EMPTY_REF {
-            let entity = self.node(index).entity;
-            match entity.key.cmp(&key) {
-                Ordering::Equal => return Some(entity.val),
-                Ordering::Less => index = self.expire_left(index, time),
-                Ordering::Greater => index = self.expire_right(index, time),
-            }
-        }
-
-        None
-    }
-
-    #[inline]
     fn search_first_less(&mut self, time: E, default: V, key: K) -> V {
         let mut index = self.expire_root(time);
         let mut result = default;
         while index != EMPTY_REF {
             let entity = self.node(index).entity;
             match entity.key.cmp(&key) {
-                Ordering::Less => {
-                    result = entity.val;
-                    index = self.expire_right(index, time);
-                }
-                _ => index = self.expire_left(index, time),
-            }
-        }
-
-        result
-    }
-
-    #[inline]
-    fn search_first_less_or_equal(&mut self, time: E, default: V, key: K) -> V {
-        let mut index = self.expire_root(time);
-        let mut result = default;
-        while index != EMPTY_REF {
-            let entity = self.node(index).entity;
-            match entity.key.cmp(&key) {
-                Ordering::Equal => return entity.val,
-                Ordering::Less => {
-                    result = entity.val;
-                    index = self.expire_right(index, time);
-                }
-                Ordering::Greater => index = self.expire_left(index, time),
-            }
-        }
-
-        result
-    }
-
-    #[inline]
-    fn search_first_less_by<F>(&mut self, time: E, default: V, f: F) -> V
-    where
-        F: Fn(K) -> Ordering,
-    {
-        let mut index = self.expire_root(time);
-        let mut result = default;
-        while index != EMPTY_REF {
-            let entity = self.node(index).entity;
-            match f(entity.key) {
                 Ordering::Less => {
                     result = entity.val;
                     index = self.expire_right(index, time);
