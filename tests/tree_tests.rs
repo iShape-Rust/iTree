@@ -6,7 +6,7 @@ mod tests {
     use i_tree::key::list::KeyExpList;
     use i_tree::key::tree::KeyExpTree;
     use rand::prelude::SliceRandom;
-    use rand::{rng, RngExt};
+    use rand::{RngExt, rng};
     use std::cmp::Ordering;
 
     struct Task {
@@ -49,7 +49,7 @@ mod tests {
 
     impl PartialOrd<Self> for Key {
         fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            self.key.partial_cmp(&other.key)
+            Some(self.cmp(other))
         }
     }
 
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn test_05() {
-        let vals = vec![0, 3, 5, 6];
+        let vals = [0, 3, 5, 6];
         let keys = vals.iter().map(|&a| Key::new(a, 10));
 
         let mut tree = KeyExpTree::new(8);
@@ -412,7 +412,7 @@ mod tests {
         let mut tree = KeyExpTree::new(8);
         let mut list = KeyExpList::new(20);
 
-        let keys = vec![Key::new(8, 4), Key::new(2, 4), Key::new(5, 3), Key::new(0, 5)];
+        let keys = [Key::new(8, 4), Key::new(2, 4), Key::new(5, 3), Key::new(0, 5)];
 
         for &key in keys.iter() {
             tree.insert(key, key.key, 0);
@@ -436,7 +436,7 @@ mod tests {
         let mut tree = KeyExpTree::new(8);
         let mut list = KeyExpList::new(20);
 
-        let keys = vec![Key::new(0, 2), Key::new(1, 1)];
+        let keys = [Key::new(0, 2), Key::new(1, 1)];
 
         for &key in keys.iter() {
             tree.insert(key, key.key, 0);
@@ -575,8 +575,7 @@ mod tests {
         let mut tree: KeyExpTree<Key, i32, i32> = KeyExpTree::new(8);
         let mut list: KeyExpList<Key, i32, i32> = KeyExpList::new(200);
 
-        for i in 0..tasks.len() - 1 {
-            let task = &tasks[i];
+        for task in tasks.iter().take(tasks.len() - 1) {
             if task.exp == 0 {
                 let list_result = list.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));
                 let tree_result = tree.first_less_or_equal_by(task.time, -1, |k| k.key.cmp(&task.val));

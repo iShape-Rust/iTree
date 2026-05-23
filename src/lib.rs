@@ -19,6 +19,96 @@ pub trait Expiration: Copy + Ord {
     fn max_expiration() -> Self;
 }
 
+pub trait LayoutUInt: Copy + Ord + core::ops::Shr<u32, Output = Self> {
+    const HEAP_MIN_SPAN: Self;
+
+    fn ilog2(self) -> u32;
+    fn to_u32(self) -> u32;
+}
+
+pub trait LayoutNumber: Copy + Ord {
+    type UInt: LayoutUInt;
+
+    fn range_span(start: Self, end: Self) -> Option<Self::UInt>;
+    fn offset_from(self, min: Self) -> Self::UInt;
+}
+
+macro_rules! impl_layout_uint {
+    ($($t:ty),*) => {
+        $(
+            impl LayoutUInt for $t {
+                const HEAP_MIN_SPAN: Self = 31;
+
+                #[inline]
+                fn ilog2(self) -> u32 {
+                    self.ilog2()
+                }
+
+                #[inline]
+                fn to_u32(self) -> u32 {
+                    self as u32
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_signed_layout_number {
+    ($($t:ty => ($u:ty, $w:ty)),*) => {
+        $(
+            impl LayoutNumber for $t {
+                type UInt = $u;
+
+                #[inline]
+                fn range_span(start: Self, end: Self) -> Option<Self::UInt> {
+                    if end < start {
+                        return None;
+                    }
+                    Some((end as $w - start as $w) as Self::UInt)
+                }
+
+                #[inline]
+                fn offset_from(self, min: Self) -> Self::UInt {
+                    (self as $w - min as $w) as Self::UInt
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_unsigned_layout_number {
+    ($($t:ty),*) => {
+        $(
+            impl LayoutNumber for $t {
+                type UInt = $t;
+
+                #[inline]
+                fn range_span(start: Self, end: Self) -> Option<Self::UInt> {
+                    if end < start {
+                        return None;
+                    }
+                    Some(end - start)
+                }
+
+                #[inline]
+                fn offset_from(self, min: Self) -> Self::UInt {
+                    self - min
+                }
+            }
+        )*
+    };
+}
+
+impl_layout_uint!(u8, u16, u32, u64, usize);
+impl_signed_layout_number!(
+    i8 => (u8, i16),
+    i16 => (u16, i32),
+    i32 => (u32, i64),
+    i64 => (u64, i128),
+    isize => (usize, i128)
+);
+impl_unsigned_layout_number!(u8, u16, u32, u64, usize);
+
 impl Expiration for u8 {
     #[inline]
     fn max_expiration() -> Self {

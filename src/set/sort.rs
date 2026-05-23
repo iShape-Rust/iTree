@@ -17,7 +17,14 @@ pub trait SetCollection<K, V> {
     where
         F: Fn(&K) -> Ordering;
 
+    /// # Safety
+    ///
+    /// `index` must reference an existing element in this collection.
     unsafe fn value_by_index(&self, index: u32) -> &V;
+
+    /// # Safety
+    ///
+    /// `index` must reference an existing element in this collection.
     unsafe fn value_by_index_mut(&mut self, index: u32) -> &mut V;
 
     fn clear(&mut self);

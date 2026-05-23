@@ -3,26 +3,24 @@ use crate::seg::entity::Entity;
 use crate::seg::exp::{SegExpCollection, SegRange};
 use crate::seg::heap::BitIter;
 use crate::seg::layout::Layout;
-use crate::{Expiration, ExpiredVal};
+use crate::{Expiration, ExpiredVal, LayoutNumber};
 use alloc::vec;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
 pub struct SegExpTree<R, E, V> {
-    layout: Layout,
+    layout: Layout<R>,
     chunks: Vec<Chunk<E, V>>,
     phantom_data: PhantomData<R>,
 }
 
 impl<R, E: Expiration, V: ExpiredVal<E>> SegExpTree<R, E, V>
 where
-    i64: From<R>,
+    R: LayoutNumber,
 {
     #[inline]
     pub fn new(range: SegRange<R>) -> Option<Self> {
-        let end: i64 = range.max.into();
-        let start: i64 = range.min.into();
-        let layout = Layout::new(start, end)?;
+        let layout = Layout::new(range.min, range.max)?;
         let count = layout.count();
 
         Some(Self {
@@ -45,11 +43,11 @@ where
 
 impl<R, E: Expiration, V: ExpiredVal<E>> SegExpCollection<R, E, V> for SegExpTree<R, E, V>
 where
-    i64: From<R>,
+    R: LayoutNumber,
 {
     #[inline]
     fn insert_by_range(&mut self, range: SegRange<R>, val: V) {
-        let mask = self.layout.insert_mask(range.min.into(), range.max.into());
+        let mask = self.layout.insert_mask(range.min, range.max);
         let entity = Entity::new(val, mask);
         for index in BitIter::new(mask) {
             self.chunk_mut(index).insert(entity);
@@ -65,7 +63,7 @@ where
 
     #[inline]
     fn iter_by_range(&mut self, range: SegRange<R>, time: E) -> SegExpTreeIterator<'_, R, E, V> {
-        let mask = self.layout.intersect_mask(range.min.into(), range.max.into());
+        let mask = self.layout.intersect_mask(range.min, range.max);
         SegExpTreeIterator::new(mask, time, self)
     }
 
@@ -88,7 +86,7 @@ pub struct SegExpTreeIterator<'a, R, E, V> {
 
 impl<'a, R, E: Expiration, V: ExpiredVal<E>> SegExpTreeIterator<'a, R, E, V>
 where
-    i64: From<R>,
+    R: LayoutNumber,
 {
     #[inline]
     fn new(mask: u64, time: E, tree: &'a mut SegExpTree<R, E, V>) -> Self {
@@ -120,7 +118,7 @@ where
 
 impl<R, E: Expiration, V: ExpiredVal<E>> Iterator for SegExpTreeIterator<'_, R, E, V>
 where
-    i64: From<R>,
+    R: LayoutNumber,
 {
     type Item = V;
 
@@ -270,12 +268,8 @@ mod tests {
         let s0 = Segment::new(0, -10240, 10, 10240);
         let s1 = Segment::new(0, -10240, 10240, -10240);
 
-        let m0 = tree
-            .layout
-            .intersect_mask(s0.y_range().min.into(), s0.y_range().max.into());
-        let m1 = tree
-            .layout
-            .intersect_mask(s1.y_range().min.into(), s1.y_range().max.into());
+        let m0 = tree.layout.intersect_mask(s0.y_range().min, s0.y_range().max);
+        let m1 = tree.layout.intersect_mask(s1.y_range().min, s1.y_range().max);
 
         assert_ne!(m0 & m1, 0);
 

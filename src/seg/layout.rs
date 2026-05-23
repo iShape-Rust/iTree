@@ -1,21 +1,22 @@
 use crate::seg::heap::Heap32;
+use crate::{LayoutNumber, LayoutUInt};
 
-pub(super) struct Layout {
-    min: i64,
-    max: i64,
+pub(super) struct Layout<R> {
+    min: R,
+    max: R,
     scale: u32,
 }
 
-impl Layout {
+impl<R: LayoutNumber> Layout<R> {
     #[inline]
-    pub(super) fn new(start: i64, end: i64) -> Option<Self> {
+    pub(super) fn new(start: R, end: R) -> Option<Self> {
         let min = start;
         let max = end;
-        let len = (max - min + 1) as usize;
-        if len < Heap32::POWER as usize {
+        let span = R::range_span(min, max)?;
+        if span < R::UInt::HEAP_MIN_SPAN {
             return None;
         }
-        let p = (len - 1).ilog2() + 1;
+        let p = span.ilog2() + 1;
         if p < Heap32::POWER {
             return None;
         }
@@ -25,8 +26,8 @@ impl Layout {
     }
 
     #[inline]
-    pub(super) fn index(&self, value: i64) -> u32 {
-        ((value - self.min) >> self.scale) as u32
+    pub(super) fn index(&self, value: R) -> u32 {
+        (value.offset_from(self.min) >> self.scale).to_u32()
     }
 
     #[inline]
@@ -36,7 +37,7 @@ impl Layout {
     }
 
     #[inline]
-    pub(super) fn insert_mask(&self, min: i64, max: i64) -> u64 {
+    pub(super) fn insert_mask(&self, min: R, max: R) -> u64 {
         let start = self.index(min);
         let end = self.index(max);
 
@@ -44,7 +45,7 @@ impl Layout {
     }
 
     #[inline]
-    pub(super) fn intersect_mask(&self, min: i64, max: i64) -> u64 {
+    pub(super) fn intersect_mask(&self, min: R, max: R) -> u64 {
         let start = self.index(min);
         let end = self.index(max);
 
@@ -88,5 +89,19 @@ mod tests {
         let inter = m0 & m1;
 
         assert_ne!(inter, 0);
+    }
+
+    #[test]
+    fn test_full_i32_range() {
+        let layout = Layout::new(i32::MIN, i32::MAX).unwrap();
+        assert_eq!(layout.index(i32::MIN), 0);
+        assert_eq!(layout.index(i32::MAX), 31);
+    }
+
+    #[test]
+    fn test_full_i64_range() {
+        let layout = Layout::new(i64::MIN, i64::MAX).unwrap();
+        assert_eq!(layout.index(i64::MIN), 0);
+        assert_eq!(layout.index(i64::MAX), 31);
     }
 }
